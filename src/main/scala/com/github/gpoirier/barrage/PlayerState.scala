@@ -16,4 +16,4 @@ case class Resources(money: Int, excavators: Int, mixers: Int)
 
 case class WheelSlot(tile: Option[TechnologyTile], excavator: Int, mixer: Int)
 case class Wheel(slots: List[WheelSlot])
-case class PlayerState(resources: Resources, wheel: Wheel, points: Int, tiles: List[TechnologyTile])
+case class PlayerState(resources: Resources, wheel: Wheel, points: Int, tiles: Set[TechnologyTile])
