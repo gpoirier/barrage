@@ -65,6 +65,13 @@ object PlayerState {
         engineers = playerstate.engineers - engineers,
         resources = playerstate.resources.copy(credit = playerstate.resources.credit - cost)
       ).spin(spins)
+    case Action.PatentOffice(tile) =>
+      //TODO Update patent office
+      playerstate.copy(
+        engineers = playerstate.engineers - 2,
+        resources = playerstate.resources.copy(credit = playerstate.resources.credit - Credit(5)),
+        tiles = playerstate.tiles + tile
+      )
     case _ => ???
   }
 }

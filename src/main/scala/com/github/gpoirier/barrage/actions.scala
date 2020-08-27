@@ -44,10 +44,13 @@ object actions {
       spins: Int
     ) extends Action
 
+    case class PatentOffice(
+      tile: TechnologyTile
+    ) extends Action
+
     sealed trait TurbineStation extends Action
     sealed trait WaterManagement extends Action
     sealed trait ContractOffice extends Action
-    sealed trait PatentOffice extends Action
     sealed trait ExternalWorks extends Action
     sealed trait SpecialBuildings extends Action
   }
