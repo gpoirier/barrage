@@ -1,6 +1,4 @@
 package com.github.gpoirier.barrage
-import com.github.gpoirier.barrage.actions._
-
 import scala.collection.immutable.Queue
 
 sealed trait StructureType
@@ -52,26 +50,5 @@ case class PlayerState(engineers: Int, resources: Resources, wheel: Wheel, point
 }
 
 object PlayerState {
-  def resolve(playerstate: PlayerState, action: Action): PlayerState = action match {
 
-    case Action.MachineShop(engineers, cost, reward) =>
-      val newResources = Resources(playerstate.resources.credit - cost, playerstate.resources.machinery + reward)
-      playerstate.copy(
-        engineers = playerstate.engineers - engineers,
-        resources = newResources
-      )
-    case Action.WorkShop(engineers, cost, spins) =>
-      playerstate.copy(
-        engineers = playerstate.engineers - engineers,
-        resources = playerstate.resources.copy(credit = playerstate.resources.credit - cost)
-      ).spin(spins)
-    case Action.PatentOffice(tile) =>
-      //TODO Update patent office
-      playerstate.copy(
-        engineers = playerstate.engineers - 2,
-        resources = playerstate.resources.copy(credit = playerstate.resources.credit - Credit(5)),
-        tiles = playerstate.tiles + tile
-      )
-    case _ => ???
-  }
 }
