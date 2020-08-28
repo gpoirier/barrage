@@ -1,4 +1,6 @@
 package com.github.gpoirier.barrage
+import com.github.gpoirier.barrage.costs._
+
 import scala.collection.immutable.Queue
 
 sealed trait StructureType
@@ -38,6 +40,17 @@ case class Wheel(slots: Queue[WheelSlot] = Queue.fill(5)(WheelSlot.empty)) {
 }
 
 case class PlayerState(engineers: Int, resources: Resources, wheel: Wheel, points: Int, tiles: Set[TechnologyTile]) {
+
+  def resolveCost(cost: Cost): PlayerState = cost match {
+    case Costs(costs) => costs match {
+      case Nil => this
+      case head :: tail => resolveCost(head).resolveCost(tail.asInstanceOf[Cost])
+    }
+    case EngineerCost(count) => copy(engineers = engineers - count)
+    case CreditCost(credit: Credit) => copy(resources = Resources(this.resources.credit - credit, this.resources.machinery))
+    case MachineryCost(machinery: Machinery) => copy(resources = Resources(this.resources.credit, this.resources.machinery - machinery))
+  }
+
   def spin: PlayerState = {
     val (slot, newWheel) = wheel.push(WheelSlot.empty)
     copy(wheel = newWheel, resources = Resources(resources.credit, resources.machinery + slot.machinery), tiles = tiles ++ slot.tile)

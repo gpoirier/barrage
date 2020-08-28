@@ -1,5 +1,7 @@
 package com.github.gpoirier.barrage
 
+import com.github.gpoirier.barrage.rewards.{ResourceReward, TechnologyTileReward, WrenchReward}
+
 object actions {
 
   sealed trait LocationCost
@@ -34,18 +36,18 @@ object actions {
 
     case class MachineShop(
       engineers: Int,
-      cost: Credit,
-      reward: Machinery
+      credit: Credit,
+      reward: ResourceReward
     ) extends Action
 
     case class WorkShop(
       engineers: Int,
-      cost: Credit,
-      spins: Int
+      credit: Credit,
+      reward: WrenchReward
     ) extends Action
 
     case class PatentOffice(
-      tile: TechnologyTile
+      tile: TechnologyTileReward
     ) extends Action
 
     sealed trait TurbineStation extends Action
