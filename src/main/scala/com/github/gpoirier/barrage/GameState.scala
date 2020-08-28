@@ -6,10 +6,12 @@ case class GameState(
                     )
 object GameState {}
 
-case class PatentOffice(tiles: Set[TechnologyTile])
+case class PatentOffice(tiles: Set[TechnologyTile]) {
+  def -(tile: TechnologyTile): PatentOffice = PatentOffice(tiles - tile)
+}
 object PatentOffice {
   def removeTile(patentOffice: PatentOffice, tile: TechnologyTile): PatentOffice = {
-    patentOffice.copy(tiles = patentOffice.tiles.filterNot(_ == tile))
+    patentOffice - tile
   }
 }
 
