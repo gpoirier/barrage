@@ -22,10 +22,12 @@ object actions {
     case class SpecialBuilding(row: Int, cost: LocationCost) extends BuildLocation
   }
 
-  sealed trait Action
+  sealed trait Action {
+    def engineers: EngineerCount
+  }
   object Action {
     case class Build(
-      engineers: Int,
+      engineers: EngineerCount,
       tile: TechnologyTile,
       structureType: StructureType,
       location: BuildLocation,
@@ -33,20 +35,22 @@ object actions {
     ) extends Action
 
     case class MachineShop(
-      engineers: Int,
+      engineers: EngineerCount,
       cost: Credit,
       reward: Machinery
     ) extends Action
 
     case class WorkShop(
-      engineers: Int,
+      engineers: EngineerCount,
       cost: Credit,
       spins: Int
     ) extends Action
 
     case class PatentOffice(
       tile: TechnologyTile
-    ) extends Action
+    ) extends Action {
+      def engineers: EngineerCount = EngineerCount(2)
+    }
 
     sealed trait TurbineStation extends Action
     sealed trait WaterManagement extends Action
