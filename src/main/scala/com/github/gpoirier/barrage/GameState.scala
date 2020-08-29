@@ -14,12 +14,12 @@ object GameState {
     action match {
 
       case Action.MachineShop(engineers, cost, reward) =>
-        val newResources = Resources(playerState.resources.credit - cost, playerState.resources.machinery + reward)
-        val newPlayerState = playerState.copy(
-          engineers = playerState.engineers - engineers,
-          resources = newResources
-        )
-        gameState.copy(players = gameState.players.updated(player, newPlayerState))
+        val update =
+          lens.playerCredits.modify(_ - cost) compose
+          lens.playerMachinery.modify(_ + reward) compose
+          lens.engineers.modify(_ - engineers)
+
+        gameState.copy(players = gameState.players.updated(player, update(playerState)))
       case Action.WorkShop(engineers, cost, spins) =>
         val newPlayerState = playerState.copy(
           engineers = playerState.engineers - engineers,
@@ -29,7 +29,7 @@ object GameState {
       case Action.PatentOffice(tile) =>
         val newPatentOffice = gameState.patentOffice.copy(tiles = gameState.patentOffice.tiles - tile)
         val newPlayerState = playerState.copy(
-          engineers = playerState.engineers - 2,
+          engineers = playerState.engineers - action.engineers,
           resources = playerState.resources.copy(credit = playerState.resources.credit - Credit(5)),
           tiles = playerState.tiles + tile
         )

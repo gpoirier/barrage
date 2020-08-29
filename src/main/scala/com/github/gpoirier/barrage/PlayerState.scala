@@ -26,6 +26,11 @@ case class Resources(credit: Credit, machinery: Machinery) {
   def +(other: Resources): Resources = Resources(credit + other.credit, machinery + other.machinery)
 }
 
+case class EngineerCount(value: Int) extends AnyVal {
+  def -(other: EngineerCount): EngineerCount = EngineerCount(value - other.value)
+  def +(other: EngineerCount): EngineerCount = EngineerCount(value + other.value)
+}
+
 case class WheelSlot(tile: Option[TechnologyTile], machinery: Machinery)
 object WheelSlot {
   val empty = WheelSlot(None, Machinery(0, 0))
@@ -37,7 +42,7 @@ case class Wheel(slots: Queue[WheelSlot] = Queue.fill(5)(WheelSlot.empty)) {
   }
 }
 
-case class PlayerState(engineers: Int, resources: Resources, wheel: Wheel, points: Int, tiles: Set[TechnologyTile]) {
+case class PlayerState(engineers: EngineerCount, resources: Resources, wheel: Wheel, points: Int, tiles: Set[TechnologyTile]) {
   def spin: PlayerState = {
     val (slot, newWheel) = wheel.push(WheelSlot.empty)
     copy(wheel = newWheel, resources = Resources(resources.credit, resources.machinery + slot.machinery), tiles = tiles ++ slot.tile)
