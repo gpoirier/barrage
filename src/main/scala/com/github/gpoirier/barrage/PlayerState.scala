@@ -55,5 +55,5 @@ case class PlayerState(engineers: EngineerCount, resources: Resources, wheel: Wh
 }
 
 object PlayerState {
-
+  def spin(count: Int): PlayerState => PlayerState = _.spin(count)
 }

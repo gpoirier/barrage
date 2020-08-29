@@ -3,50 +3,54 @@ package com.github.gpoirier.barrage
 import com.github.gpoirier.barrage.actions.Action
 
 case class GameState(
-                    players: Map[Player, PlayerState],
-                    patentOffice: PatentOffice
-                    )
+  currentPlayer: Company,
+  players: Map[Company, PlayerState],
+  patentOffice: PatentOffice
+) {
+  def currentPlayerState: PlayerState = players(currentPlayer)
+}
 object GameState {
-  def resolve(gameState: GameState, player: Player, action: Action): GameState = {
 
-    val playerState = gameState.players(player)
+  def forActivePlayer(f: PlayerState => PlayerState): GameState => GameState =
+    lens.activePlayer.modify(f)
 
-    action match {
-
-      case Action.MachineShop(engineers, cost, reward) =>
-        val update =
-          lens.playerCredits.modify(_ - cost) compose
+  def resolveAction: Action => GameState => GameState = {
+    case Action.MachineShop(engineers, cost, reward) =>
+      forActivePlayer {
+        lens.playerCredits.modify(_ - cost) compose
           lens.playerMachinery.modify(_ + reward) compose
           lens.engineers.modify(_ - engineers)
+      }
 
-        gameState.copy(players = gameState.players.updated(player, update(playerState)))
-      case Action.WorkShop(engineers, cost, spins) =>
-        val newPlayerState = playerState.copy(
-          engineers = playerState.engineers - engineers,
-          resources = playerState.resources.copy(credit = playerState.resources.credit - cost)
-        ).spin(spins)
-        gameState.copy(players = gameState.players.updated(player, newPlayerState))
-      case Action.PatentOffice(tile) =>
-        val newPatentOffice = gameState.patentOffice.copy(tiles = gameState.patentOffice.tiles - tile)
-        val newPlayerState = playerState.copy(
-          engineers = playerState.engineers - action.engineers,
-          resources = playerState.resources.copy(credit = playerState.resources.credit - Credit(5)),
-          tiles = playerState.tiles + tile
-        )
-        gameState.copy(players = gameState.players.updated(player, newPlayerState), patentOffice = newPatentOffice)
-      case _ => ???
-    }
+    case Action.WorkShop(engineers, cost, spins) =>
+      forActivePlayer {
+        lens.engineers.modify(_ - engineers) compose
+          lens.playerCredits.modify(_ - cost) compose
+          PlayerState.spin(spins)
+      }
+
+    case action @ Action.PatentOffice(tile) =>
+      lens.patentOffice.modify(_ - tile) compose
+        forActivePlayer {
+          lens.engineers.modify(_ - action.engineers) compose
+            lens.playerCredits.modify(_ - Credit(5)) compose
+            lens.playerTiles.modify(_ + tile)
+        }
+
+    case _ => ???
   }
+
+  def resolve(gameState: GameState, action: Action): GameState =
+    resolveAction(action)(gameState)
 }
 
-case class Player(name: String)
+sealed trait Company
+case object USA extends Company
+case object France extends Company
+case object Netherlands extends Company
+case object Italy extends Company
+case object Germany extends Company
 
 case class PatentOffice(tiles: Set[TechnologyTile]) {
   def -(tile: TechnologyTile): PatentOffice = PatentOffice(tiles - tile)
 }
-object PatentOffice {
-  def removeTile(patentOffice: PatentOffice, tile: TechnologyTile): PatentOffice = {
-    patentOffice - tile
-  }
-}
-
