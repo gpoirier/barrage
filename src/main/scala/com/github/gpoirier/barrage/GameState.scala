@@ -1,8 +1,6 @@
 package com.github.gpoirier.barrage
 
 import com.github.gpoirier.barrage.actions.Action
-import monocle.function.all._
-import monocle.unsafe.MapTraversal._
 
 case class GameState(
   currentPlayer: Company,
@@ -76,7 +74,7 @@ object GameState {
     def resetEngineers = lens.engineers.set(EngineerCount(12))
 
     val steps = resetTurnOrder compose
-        (lens.players composeTraversal each).modify(resetEnergyMarkers compose resetEngineers)
+        lens.eachPlayers.modify(resetEnergyMarkers compose resetEngineers)
 
     steps(state)
   }

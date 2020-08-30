@@ -1,7 +1,9 @@
 package com.github.gpoirier.barrage
 
-import monocle.Lens
+import monocle.{Lens, Traversal}
 import monocle.macros.GenLens
+import monocle.function.all._
+import monocle.unsafe.MapTraversal._
 
 object lens {
   val wheel: Lens[PlayerState, Wheel] = GenLens[PlayerState](_.wheel)
@@ -15,6 +17,7 @@ object lens {
   val playerCredits: Lens[PlayerState, Credit] = resources composeLens credits
   val playerMachinery: Lens[PlayerState, Machinery] = resources composeLens machinery
 
+  val eachPlayers: Traversal[GameState, PlayerState] = lens.players composeTraversal each
   val players: Lens[GameState, Map[Company, PlayerState]] = GenLens[GameState](_.players)
   val activePlayer: Lens[GameState, PlayerState] =
     Lens[GameState, PlayerState](_.currentPlayerState)(player => game => players.modify(_ + (game.currentPlayer -> player))(game))
