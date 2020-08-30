@@ -1,5 +1,6 @@
 package com.github.gpoirier.barrage
 
+import cats.data.NonEmptyList
 import com.github.gpoirier.barrage.actions.Action
 
 case class GameState(
@@ -24,8 +25,17 @@ case class GameState(
 }
 object GameState {
 
+  def initial(turnOrder: NonEmptyList[Company]): GameState =
+    GameState(
+      currentPlayer = turnOrder.head,
+      turnOrder = turnOrder.toList,
+      players = turnOrder.map(_ -> PlayerState.initial).toList.toMap,
+      // TODO Randomize first 3 tiles, and support for preselection with one tile per level removed
+      patentOffice = PatentOffice(TechnologyTile.allForLevel(1).take(3))
+    )
+
   private def forActivePlayer(f: PlayerState => PlayerState): GameState => GameState =
-    lens.activePlayer.modify(f)
+    lens.currentPlayerState.modify(f)
 
   def resolveAction: Action => GameState => GameState = {
     case Action.Pass =>
@@ -57,8 +67,8 @@ object GameState {
   }
 
   def resolve(gameState: GameState, action: Action): GameState = {
-    val nextPlayer = gameState.nextPlayerState
-    (resolveAction(action) compose lens.activePlayer.set(nextPlayer))(gameState)
+    val nextPlayer = gameState.nextPlayer
+    (resolveAction(action) andThen lens.currentPlayer.set(nextPlayer))(gameState)
   }
 
   /*
@@ -69,11 +79,11 @@ object GameState {
   def endOfRound: GameState => GameState = { state =>
     val newTurnOrder = state.players.view.mapValues(_.energyProduction.energyCount).toList.sortBy(_._2).map(_._1)
 
-    def resetTurnOrder = lens.turnOrder.set(newTurnOrder)
+    def updateTurnOrder = lens.turnOrder.set(newTurnOrder)
     def resetEnergyMarkers = lens.energyProduction.set(RoundProduction(0))
     def resetEngineers = lens.engineers.set(EngineerCount(12))
 
-    val steps = resetTurnOrder compose
+    val steps = updateTurnOrder compose
         lens.eachPlayers.modify(resetEnergyMarkers compose resetEngineers)
 
     steps(state)

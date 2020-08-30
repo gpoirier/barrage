@@ -18,9 +18,10 @@ object lens {
   val playerMachinery: Lens[PlayerState, Machinery] = resources composeLens machinery
 
   val eachPlayers: Traversal[GameState, PlayerState] = lens.players composeTraversal each
-  val players: Lens[GameState, Map[Company, PlayerState]] = GenLens[GameState](_.players)
-  val activePlayer: Lens[GameState, PlayerState] =
+  def players: Lens[GameState, Map[Company, PlayerState]] = GenLens[GameState](_.players)
+  val currentPlayerState: Lens[GameState, PlayerState] =
     Lens[GameState, PlayerState](_.currentPlayerState)(player => game => players.modify(_ + (game.currentPlayer -> player))(game))
+  val currentPlayer: Lens[GameState, Company] = GenLens[GameState](_.currentPlayer)
 
   val patentOffice: Lens[GameState, PatentOffice] = GenLens[GameState](_.patentOffice)
   val turnOrder: Lens[GameState, List[Company]] = GenLens[GameState](_.turnOrder)
