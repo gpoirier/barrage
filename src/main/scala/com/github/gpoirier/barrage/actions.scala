@@ -26,6 +26,8 @@ object actions {
     def engineers: EngineerCount
   }
   object Action {
+
+    case class ActionSpot[A <: Action](cheap: A, expensive: A)
     case object Pass extends Action {
       def engineers: EngineerCount = EngineerCount(0)
     }
@@ -43,11 +45,46 @@ object actions {
       reward: Machinery
     ) extends Action
 
+    object MachineShop {
+      val excavator = ActionSpot(
+        cheap = MachineShop(EngineerCount(1), Credit(2), Machinery(excavators = 1)),
+        expensive = MachineShop(EngineerCount(1), Credit(5), Machinery(excavators = 1))
+      )
+
+      def choice(tpe: MachineryType): ActionSpot[MachineShop] = {
+        val machinery = tpe match {
+          case MachineryType.Excavator => Machinery(excavators = 1)
+          case MachineryType.Mixer => Machinery(mixers = 1)
+        }
+        ActionSpot(MachineShop(EngineerCount(1), Credit(4), machinery), MachineShop(EngineerCount(2), Credit(4), machinery))
+      }
+
+      val both = ActionSpot(
+        cheap = MachineShop(EngineerCount(2), Credit(5), Machinery(excavators = 1, mixers = 1)),
+        expensive = MachineShop(EngineerCount(3), Credit(8), Machinery(excavators = 1, mixers = 1))
+      )
+    }
+
     case class WorkShop(
       engineers: EngineerCount,
       cost: Credit,
       spins: Int
     ) extends Action
+
+    object WorkShop {
+      val one = ActionSpot(
+        cheap = WorkShop(EngineerCount(1), Credit(0), 1),
+        expensive = WorkShop(EngineerCount(2), Credit(0), 1)
+      )
+      val two = ActionSpot(
+        cheap = WorkShop(EngineerCount(2), Credit(2), 2),
+        expensive = WorkShop(EngineerCount(3), Credit(5), 2)
+      )
+      val three = ActionSpot(
+        cheap = WorkShop(EngineerCount(2), Credit(5), 3),
+        expensive = WorkShop(EngineerCount(3), Credit(8), 3)
+      )
+    }
 
     case class PatentOffice(
       tile: TechnologyTile
