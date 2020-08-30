@@ -7,7 +7,8 @@ case class GameState(
   currentPlayer: Company,
   turnOrder: List[Company],
   players: Map[Company, PlayerState],
-  patentOffice: PatentOffice
+  patentOffice: PatentOffice,
+  externalWorks: ExternalWorks
 ) {
   def currentPlayerState: PlayerState = players(currentPlayer)
 
@@ -31,7 +32,8 @@ object GameState {
       turnOrder = turnOrder.toList,
       players = turnOrder.map(_ -> PlayerState.initial).toList.toMap,
       // TODO Randomize first 3 tiles, and support for preselection with one tile per level removed
-      patentOffice = PatentOffice(TechnologyTile.allForLevel(1).take(3))
+      patentOffice = PatentOffice(TechnologyTile.allForLevel(1).take(3)),
+      externalWorks = ExternalWorks(Set(C1))
     )
 
   private def forActivePlayer(f: PlayerState => PlayerState): GameState => GameState =
@@ -62,6 +64,11 @@ object GameState {
             lens.playerCredits.modify(_ - Credit(5)) compose
             lens.playerTiles.modify(_ + tile)
         }
+
+    case Action.ExternalWorks(externalWork: ExternalWork) =>
+      forActivePlayer(lens.engineers.modify(_ - EngineerCount(2)) andThen lens.playerMachinery.modify(_ - externalWork.cost)) andThen
+        lens.externalWorks.modify(_ - externalWork) andThen
+        externalWork.resolve
 
     case _ => ???
   }
@@ -99,4 +106,19 @@ case object Germany extends Company
 
 case class PatentOffice(tiles: Set[TechnologyTile]) {
   def -(tile: TechnologyTile): PatentOffice = PatentOffice(tiles - tile)
+}
+
+case class ExternalWorks(externalWorks: Set[ExternalWork]) {
+  def -(externalWork: ExternalWork): ExternalWorks = ExternalWorks(externalWorks - externalWork)
+}
+
+sealed trait ExternalWork {
+  val cost: Machinery
+  def resolve: GameState => GameState
+}
+object C1 extends ExternalWork {
+  val cost = Machinery(excavators = 5)
+  def resolve: GameState => GameState = {
+    lens.currentPlayerState.modify(lens.points.modify(_ + VictoryPoints(4)) andThen lens.playerMachinery.modify(_ + Machinery(mixers = 3)))
+  }
 }

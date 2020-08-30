@@ -42,7 +42,10 @@ case class EngineerCount(value: Int) extends AnyVal {
   def +(other: EngineerCount): EngineerCount = EngineerCount(value + other.value)
 }
 
-case class VictoryPoints(count: Int)
+case class VictoryPoints(count: Int) extends AnyVal {
+  def -(other: VictoryPoints): VictoryPoints = VictoryPoints(count - other.count)
+  def +(other: VictoryPoints): VictoryPoints = VictoryPoints(count + other.count)
+}
 case class RoundProduction(energyCount: Int)
 
 case class WheelSlot(tile: Option[TechnologyTile], machinery: Machinery)
