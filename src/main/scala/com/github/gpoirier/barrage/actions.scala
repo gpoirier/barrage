@@ -26,6 +26,9 @@ object actions {
     def engineers: EngineerCount
   }
   object Action {
+    case object Pass extends Action {
+      def engineers: EngineerCount = EngineerCount(0)
+    }
     case class Build(
       engineers: EngineerCount,
       tile: TechnologyTile,
