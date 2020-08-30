@@ -37,7 +37,7 @@ object GameState {
   private def forActivePlayer(f: PlayerState => PlayerState): GameState => GameState =
     lens.currentPlayerState.modify(f)
 
-  def resolveAction: Action => GameState => GameState = {
+  private def resolveAction: Action => GameState => GameState = {
     case Action.Pass =>
       state => state.copy(turnOrder = state.turnOrder.filter(_ != state.currentPlayer))
 
@@ -83,8 +83,8 @@ object GameState {
     def resetEnergyMarkers = lens.energyProduction.set(RoundProduction(0))
     def resetEngineers = lens.engineers.set(EngineerCount(12))
 
-    val steps = updateTurnOrder compose
-        lens.eachPlayers.modify(resetEnergyMarkers compose resetEngineers)
+    val steps = updateTurnOrder andThen
+        lens.eachPlayers.modify(resetEnergyMarkers andThen resetEngineers)
 
     steps(state)
   }
