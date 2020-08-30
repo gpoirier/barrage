@@ -8,6 +8,7 @@ object lens {
   val resources: Lens[PlayerState, Resources] = GenLens[PlayerState](_.resources)
   val engineers: Lens[PlayerState, EngineerCount] = GenLens[PlayerState](_.engineers)
   val playerTiles: Lens[PlayerState, Set[TechnologyTile]] = GenLens[PlayerState](_.tiles)
+  val energyProduction: Lens[PlayerState, RoundProduction] = GenLens[PlayerState](_.energyProduction)
 
   val credits: Lens[Resources, Credit] = GenLens[Resources](_.credit)
   val machinery: Lens[Resources, Machinery] = GenLens[Resources](_.machinery)
@@ -19,5 +20,6 @@ object lens {
     Lens[GameState, PlayerState](_.currentPlayerState)(player => game => players.modify(_ + (game.currentPlayer -> player))(game))
 
   val patentOffice: Lens[GameState, PatentOffice] = GenLens[GameState](_.patentOffice)
+  val turnOrder: Lens[GameState, List[Company]] = GenLens[GameState](_.turnOrder)
 
 }
