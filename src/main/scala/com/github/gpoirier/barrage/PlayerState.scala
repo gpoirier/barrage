@@ -19,6 +19,11 @@ object TechnologyTile {
   def allForLevel(level: Int): Set[TechnologyTile] = StructureType.all.map(tpe => TechnologyTile(level, Some(tpe)))
 }
 
+sealed trait MachineryType
+object MachineryType {
+  case object Excavator extends MachineryType
+  case object Mixer extends MachineryType
+}
 case class Credit(value: Int) extends AnyVal {
   def -(other: Credit): Credit = Credit(value - other.value)
   def +(other: Credit): Credit = Credit(value + other.value)
