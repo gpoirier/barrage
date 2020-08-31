@@ -11,6 +11,7 @@ object lens {
   val engineers: Lens[PlayerState, EngineerCount] = GenLens[PlayerState](_.engineers)
   val playerTiles: Lens[PlayerState, Set[TechnologyTile]] = GenLens[PlayerState](_.tiles)
   val energyProduction: Lens[PlayerState, RoundProduction] = GenLens[PlayerState](_.energyProduction)
+  val points: Lens[PlayerState, VictoryPoints] = GenLens[PlayerState](_.points)
 
   val credits: Lens[Resources, Credit] = GenLens[Resources](_.credit)
   val machinery: Lens[Resources, Machinery] = GenLens[Resources](_.machinery)
@@ -24,6 +25,7 @@ object lens {
   val currentPlayer: Lens[GameState, Company] = GenLens[GameState](_.currentPlayer)
 
   val patentOffice: Lens[GameState, PatentOffice] = GenLens[GameState](_.patentOffice)
+  val externalWorks: Lens[GameState, ExternalWorks] = GenLens[GameState](_.externalWorks)
   val turnOrder: Lens[GameState, List[Company]] = GenLens[GameState](_.turnOrder)
 
 }

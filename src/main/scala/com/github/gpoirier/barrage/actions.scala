@@ -86,6 +86,12 @@ object actions {
       )
     }
 
+    case class ExternalWorks(
+      externalWork: ExternalWork
+    ) extends Action {
+      def engineers: EngineerCount = EngineerCount(2)
+    }
+
     case class PatentOffice(
       tile: TechnologyTile
     ) extends Action {
@@ -95,7 +101,6 @@ object actions {
     sealed trait TurbineStation extends Action
     sealed trait WaterManagement extends Action
     sealed trait ContractOffice extends Action
-    sealed trait ExternalWorks extends Action
     sealed trait SpecialBuildings extends Action
   }
 
