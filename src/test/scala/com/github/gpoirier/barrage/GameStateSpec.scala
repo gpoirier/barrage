@@ -35,7 +35,7 @@ class GameStateSpec extends AnyFlatSpec with Matchers {
 
   behavior of "ExternalWorks"
 
-  it should "ensure C1 takes 5 excavators for 4 points and 3 mixers" in {
+  it should "ensure C1 takes 5 excavators for 6 points and 3 mixers" in {
     val initial = GameState.initial(NonEmptyList.of(Italy, Germany, Netherlands))
     val after = GameState.resolve(initial, Action.ExternalWorks(C1))
 
@@ -45,6 +45,6 @@ class GameStateSpec extends AnyFlatSpec with Matchers {
 
     after.players(Italy).engineers shouldBe EngineerCount(10)
     after.players(Italy).resources shouldBe Resources(Credit(6), Machinery(excavators = 1, mixers = 7))
-    after.players(Italy).points shouldBe VictoryPoints(14)
+    after.players(Italy).points shouldBe VictoryPoints(16)
   }
 }
