@@ -98,9 +98,14 @@ object actions {
       def engineers: EngineerCount = EngineerCount(2)
     }
 
+    case class ContractOffice(
+      engineers: EngineerCount,
+      cost: Credit,
+      contracts: Set[Contract]
+    ) extends Action
+
     sealed trait TurbineStation extends Action
     sealed trait WaterManagement extends Action
-    sealed trait ContractOffice extends Action
     sealed trait SpecialBuildings extends Action
   }
 

@@ -8,7 +8,8 @@ case class GameState(
   turnOrder: List[Company],
   players: Map[Company, PlayerState],
   patentOffice: PatentOffice,
-  externalWorks: ExternalWorks
+  externalWorks: ExternalWorks,
+  contractOffice: ContractOffice
 ) {
   def currentPlayerState: PlayerState = players(currentPlayer)
 
@@ -33,7 +34,8 @@ object GameState {
       players = turnOrder.map(_ -> PlayerState.initial).toList.toMap,
       // TODO Randomize first 3 tiles, and support for preselection with one tile per level removed
       patentOffice = PatentOffice(TechnologyTile.allForLevel(1).take(3)),
-      externalWorks = ExternalWorks(Set(C1))
+      externalWorks = ExternalWorks(Set(C1)),
+      contractOffice = ContractOffice(Set())
     )
 
   private def forActivePlayer(f: PlayerState => PlayerState): GameState => GameState =
@@ -69,6 +71,13 @@ object GameState {
       forActivePlayer(lens.engineers.modify(_ - EngineerCount(2)) andThen lens.playerMachinery.modify(_ - externalWork.cost)) andThen
         lens.externalWorks.modify(_ - externalWork) andThen
         externalWork.resolve
+
+    case Action.ContractOffice(engineers, cost, contracts) =>
+      forActivePlayer {
+        lens.engineers.modify(_ - engineers) andThen
+        lens.playerCredits.modify(_ - cost) andThen
+        lens.contracts.modify(_ ++ contracts)
+      } andThen lens.contractOffice.modify(_.replace(contracts))
 
     case _ => ???
   }
@@ -120,5 +129,47 @@ object C1 extends ExternalWork {
   val cost = Machinery(excavators = 5)
   def resolve: GameState => GameState = {
     lens.currentPlayerState.modify(lens.points.modify(_ + VictoryPoints(4)) andThen lens.playerMachinery.modify(_ + Machinery(mixers = 3)))
+  }
+}
+
+case class ContractOffice(contracts: Set[Contract]) {
+
+  val availableGreenContracts = StarterContracts.all
+  
+
+  def replace(contracts: Set[Contract]): ContractOffice = ???
+
+}
+object ContractOffice {
+
+}
+
+sealed trait Contract {
+  val energy: Int
+  def resolve: GameState => GameState
+}
+
+object StarterContracts {
+  def all: Set[Contract] = Set(S1, S2, S3, S4)
+  object S1 extends Contract with {
+    val energy = 2
+    def resolve: GameState => GameState = {
+      lens.currentPlayerState.modify(lens.playerCredits.modify(_ + Credit(3)))
+    }
+  }
+
+  object S2 extends Contract with {
+    val energy = 3
+    def resolve: GameState => GameState = ???
+  }
+
+  object S3 extends Contract {
+    val energy = 3
+    def resolve: GameState => GameState = ???
+  }
+
+  object S4 extends Contract {
+    val energy = 4]
+    def resolve: GameState => GameState = ???
   }
 }

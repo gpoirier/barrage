@@ -69,7 +69,8 @@ case class PlayerState(
   wheel: Wheel,
   points: VictoryPoints,
   energyProduction: RoundProduction,
-  tiles: Set[TechnologyTile]
+  tiles: Set[TechnologyTile],
+  contracts: Set[Contract]
 ) {
   def spin: PlayerState = {
     val (slot, newWheel) = wheel.push(WheelSlot.empty)
@@ -90,7 +91,8 @@ object PlayerState {
       Wheel.empty,
       VictoryPoints(10),
       RoundProduction(0),
-      TechnologyTile.allForLevel(0)
+      TechnologyTile.allForLevel(0),
+      Set() //Contracts
     )
 
   def spin(count: Int): PlayerState => PlayerState = _.spin(count)
