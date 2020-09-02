@@ -129,7 +129,7 @@ sealed trait ExternalWork {
 object C1 extends ExternalWork {
   val cost = Machinery(excavators = 5)
   def resolve: GameState => GameState = {
-    lens.currentPlayerState.modify(lens.points.modify(_ + VictoryPoints(4)) andThen lens.playerMachinery.modify(_ + Machinery(mixers = 3)))
+    lens.currentPlayerState.modify(lens.points.modify(_ + VictoryPoints(6)) andThen lens.playerMachinery.modify(_ + Machinery(mixers = 3)))
   }
 }
 
