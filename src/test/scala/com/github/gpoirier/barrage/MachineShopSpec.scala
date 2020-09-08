@@ -28,7 +28,7 @@ class MachineShopSpec extends AnyFlatSpec with Matchers with Inside {
   }
 
   it should "deny too many reservations" in {
-    val actions =
+    val actions1 =
       for {
         _ <- MachineShop.excavator
         _ <- MachineShop.wild
@@ -36,9 +36,23 @@ class MachineShopSpec extends AnyFlatSpec with Matchers with Inside {
         _ <- MachineShop.excavator
       } yield ()
 
-    inside(actions.run(MachineShop.empty)) {
+    val actions2 =
+      for {
+        _ <- MachineShop.excavator
+        _ <- MachineShop.wild
+        _ <- MachineShop.excavator
+        _ <- MachineShop.both
+        _ <- MachineShop.both
+        _ <- MachineShop.both
+      } yield ()
+
+    inside(actions1.run(MachineShop.empty)) {
       case Left(message) =>
-        message shouldBe "No empty action spot left"
+        message shouldBe "No empty action spot left (Excavator)"
+    }
+    inside(actions2.run(MachineShop.empty)) {
+      case Left(message) =>
+        message shouldBe "No empty action spot left (Both)"
     }
   }
 }

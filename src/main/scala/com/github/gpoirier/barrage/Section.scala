@@ -21,8 +21,8 @@ trait Section {
   type F[A] = Either[String, A]
   type Rows
 
-  protected def reserve(f: GenLens[Rows] => Lens[Rows, Row]): StateT[F, Rows, ActionColumn] = {
-    f(GenLens[Rows]) composeWith Row.reserve
+  protected def reserve(name: String, f: GenLens[Rows] => Lens[Rows, Row]): StateT[F, Rows, ActionColumn] = {
+    (f(GenLens[Rows]) composeWith Row.reserve).transformF(_.leftMap(_ ++ " (" ++ name ++ ")"))
   }
 
   case class Spot(column: ActionColumn, availability: Availability = FreeSpot) {

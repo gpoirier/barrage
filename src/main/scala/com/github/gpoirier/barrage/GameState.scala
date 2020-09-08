@@ -128,9 +128,9 @@ object C1 extends ExternalWork {
 object MachineShop extends Section {
   case class Rows(excavator: Row, wild: Row, both: Row)
 
-  def excavator: StateT[F, Rows, ActionColumn] = reserve(_(_.excavator))
-  def wild: StateT[F, Rows, ActionColumn] = reserve(_(_.wild))
-  def both: StateT[F, Rows, ActionColumn] = reserve(_(_.both))
+  def excavator: StateT[F, Rows, ActionColumn] = reserve("Excavator", _(_.excavator))
+  def wild: StateT[F, Rows, ActionColumn] = reserve("Wild", _(_.wild))
+  def both: StateT[F, Rows, ActionColumn] = reserve("Both", _(_.both))
 
   def empty: Rows = Rows(
     excavator = Row.emptyCommonRow,
