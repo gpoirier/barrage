@@ -1,6 +1,6 @@
 package com.github.gpoirier.barrage
 
-import cats.data.NonEmptyList
+import cats.data.{NonEmptyList, StateT}
 import com.github.gpoirier.barrage.actions.Action
 
 case class GameState(
@@ -8,7 +8,8 @@ case class GameState(
   turnOrder: List[Company],
   players: Map[Company, PlayerState],
   patentOffice: PatentOffice,
-  externalWorks: ExternalWorks
+  externalWorks: ExternalWorks,
+  machineShop: MachineShop.Rows
 ) {
   def currentPlayerState: PlayerState = players(currentPlayer)
 
@@ -33,7 +34,8 @@ object GameState {
       players = turnOrder.map(_ -> PlayerState.initial).toList.toMap,
       // TODO Randomize first 3 tiles, and support for preselection with one tile per level removed
       patentOffice = PatentOffice(TechnologyTile.allForLevel(1).take(3)),
-      externalWorks = ExternalWorks(Set(C1))
+      externalWorks = ExternalWorks(Set(C1)),
+      MachineShop.empty
     )
 
   private def forActivePlayer(f: PlayerState => PlayerState): GameState => GameState =
@@ -121,4 +123,18 @@ object C1 extends ExternalWork {
   def resolve: GameState => GameState = {
     lens.currentPlayerState.modify(lens.points.modify(_ + VictoryPoints(6)) andThen lens.playerMachinery.modify(_ + Machinery(mixers = 3)))
   }
+}
+
+object MachineShop extends Section {
+  case class Rows(excavator: Row, wild: Row, both: Row)
+
+  def excavator: StateT[F, Rows, ActionColumn] = reserve(_(_.excavator))
+  def wild: StateT[F, Rows, ActionColumn] = reserve(_(_.wild))
+  def both: StateT[F, Rows, ActionColumn] = reserve(_(_.both))
+
+  def empty: Rows = Rows(
+    excavator = Row.emptyCommonRow,
+    wild = Row.emptyCommonRow,
+    both = Row.emptyCommonRow,
+  )
 }
