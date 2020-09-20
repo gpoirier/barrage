@@ -32,9 +32,16 @@ case class Machinery(excavators: Int = 0, mixers: Int = 0) {
   def -(other: Machinery): Machinery = Machinery(excavators - other.excavators, mixers - other.mixers)
   def +(other: Machinery): Machinery = Machinery(excavators + other.excavators, mixers + other.mixers)
 }
+object Machinery {
+  val empty: Machinery = Machinery()
+}
 case class Resources(credit: Credit, machinery: Machinery) {
   def -(other: Resources): Resources = Resources(credit - other.credit, machinery - other.machinery)
   def +(other: Resources): Resources = Resources(credit + other.credit, machinery + other.machinery)
+}
+object Resources {
+  implicit def fromCredit(credit: Credit): Resources = Resources(credit, Machinery.empty)
+  implicit def fromMachinery(machinery: Machinery): Resources = Resources(Credit(0), machinery)
 }
 
 case class EngineerCount(value: Int) extends AnyVal {

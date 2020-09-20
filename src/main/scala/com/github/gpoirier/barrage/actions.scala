@@ -1,5 +1,25 @@
 package com.github.gpoirier.barrage
 
+object actions2 {
+  sealed trait Action
+
+  object Action {
+    sealed trait Workshop extends Action
+    object Workshop {
+      case object One extends Workshop
+      case object Two extends Workshop
+      case object Three extends Workshop
+    }
+
+    sealed trait MachineShop extends Action
+    object MachineShop {
+      case object Excavator extends MachineShop
+      case object Wild extends MachineShop
+      case object Both extends MachineShop
+    }
+  }
+}
+
 object actions {
 
   sealed trait LocationCost
@@ -25,9 +45,17 @@ object actions {
   sealed trait Action {
     def engineers: EngineerCount
   }
+  sealed trait ResourceAction extends Action {
+    def cost: Credit
+    def reward: Reward
+  }
   object Action {
 
     case class ActionSpot[A <: Action](cheap: A, expensive: A)
+    object ActionSpot {
+      def apply[A <: Action](reward: Reward)(cheap: Reward => A, expensive: Reward => A): ActionSpot[A] =
+          ActionSpot(cheap(reward), expensive(reward))
+    }
     case object Pass extends Action {
       def engineers: EngineerCount = EngineerCount(0)
     }
@@ -42,26 +70,23 @@ object actions {
     case class MachineShop(
       engineers: EngineerCount,
       cost: Credit,
-      reward: Machinery
+      reward: Reward
     ) extends Action
 
     object MachineShop {
-      val excavator = ActionSpot(
-        cheap = MachineShop(EngineerCount(1), Credit(2), Machinery(excavators = 1)),
-        expensive = MachineShop(EngineerCount(1), Credit(5), Machinery(excavators = 1))
+      val excavator = ActionSpot(Reward(Machinery(excavators = 1)))(
+        MachineShop(EngineerCount(1), Credit(2), _),
+        MachineShop(EngineerCount(1), Credit(5), _)
       )
 
-      def choice(tpe: MachineryType): ActionSpot[MachineShop] = {
-        val machinery = tpe match {
-          case MachineryType.Excavator => Machinery(excavators = 1)
-          case MachineryType.Mixer => Machinery(mixers = 1)
-        }
-        ActionSpot(MachineShop(EngineerCount(1), Credit(4), machinery), MachineShop(EngineerCount(2), Credit(4), machinery))
-      }
+      val wild = ActionSpot(Reward.wild(1))(
+        MachineShop(EngineerCount(1), Credit(4), _),
+        MachineShop(EngineerCount(2), Credit(4), _)
+      )
 
-      val both = ActionSpot(
-        cheap = MachineShop(EngineerCount(2), Credit(5), Machinery(excavators = 1, mixers = 1)),
-        expensive = MachineShop(EngineerCount(3), Credit(8), Machinery(excavators = 1, mixers = 1))
+      val both = ActionSpot(Reward(Machinery(excavators = 1, mixers = 1)))(
+        MachineShop(EngineerCount(2), Credit(5), _),
+        MachineShop(EngineerCount(3), Credit(8), _)
       )
     }
 
@@ -104,4 +129,14 @@ object actions {
     sealed trait SpecialBuildings extends Action
   }
 
+  sealed trait Reward
+  object Reward {
+    case class WildMachinery(count: Int) extends Reward
+    case class FixedResources(resources: Resources) extends Reward
+    case class Wrench(count: Int) extends Reward
+
+    def apply(resources: Resources): Reward = FixedResources(resources)
+
+    def wild(count: Int): Reward = WildMachinery(count)
+  }
 }

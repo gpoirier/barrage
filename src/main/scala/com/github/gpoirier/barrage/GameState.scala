@@ -45,12 +45,12 @@ object GameState {
     case Action.Pass =>
       state => state.copy(turnOrder = state.turnOrder.filter(_ != state.currentPlayer))
 
-    case Action.MachineShop(engineers, cost, reward) =>
-      forActivePlayer {
-        lens.playerCredits.modify(_ - cost) compose
-          lens.playerMachinery.modify(_ + reward) compose
-          lens.engineers.modify(_ - engineers)
-      }
+//    case Action.MachineShop(engineers, cost, reward) =>
+//      forActivePlayer {
+//        lens.playerCredits.modify(_ - cost) compose
+//          lens.playerMachinery.modify(_ + reward) compose
+//          lens.engineers.modify(_ - engineers)
+//      }
 
     case Action.WorkShop(engineers, cost, spins) =>
       forActivePlayer {
