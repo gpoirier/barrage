@@ -41,44 +41,44 @@ object GameState {
   private def forActivePlayer(f: PlayerState => PlayerState): GameState => GameState =
     lens.currentPlayerState.modify(f)
 
-  private def resolveAction: Action => GameState => GameState = {
-    case Action.Pass =>
-      state => state.copy(turnOrder = state.turnOrder.filter(_ != state.currentPlayer))
-
-//    case Action.MachineShop(engineers, cost, reward) =>
+//  private def resolveAction: Action => GameState => GameState = {
+//    case Action.Pass =>
+//      state => state.copy(turnOrder = state.turnOrder.filter(_ != state.currentPlayer))
+//
+////    case Action.MachineShop(engineers, cost, reward) =>
+////      forActivePlayer {
+////        lens.playerCredits.modify(_ - cost) compose
+////          lens.playerMachinery.modify(_ + reward) compose
+////          lens.engineers.modify(_ - engineers)
+////      }
+//
+//    case Action.WorkShop(engineers, cost, spins) =>
 //      forActivePlayer {
-//        lens.playerCredits.modify(_ - cost) compose
-//          lens.playerMachinery.modify(_ + reward) compose
-//          lens.engineers.modify(_ - engineers)
+//        lens.engineers.modify(_ - engineers) compose
+//          lens.playerCredits.modify(_ - cost) compose
+//          PlayerState.spin(spins)
 //      }
+//
+//    case action @ Action.PatentOffice(tile) =>
+//      lens.patentOffice.modify(_ - tile) compose
+//        forActivePlayer {
+//          lens.engineers.modify(_ - action.engineers) compose
+//            lens.playerCredits.modify(_ - Credit(5)) compose
+//            lens.playerTiles.modify(_ + tile)
+//        }
+//
+//    case Action.ExternalWorks(externalWork: ExternalWork) =>
+//      forActivePlayer(lens.engineers.modify(_ - EngineerCount(2)) andThen lens.playerMachinery.modify(_ - externalWork.cost)) andThen
+//        lens.externalWorks.modify(_ - externalWork) andThen
+//        externalWork.resolve
+//
+//    case _ => ???
+//  }
 
-    case Action.WorkShop(engineers, cost, spins) =>
-      forActivePlayer {
-        lens.engineers.modify(_ - engineers) compose
-          lens.playerCredits.modify(_ - cost) compose
-          PlayerState.spin(spins)
-      }
-
-    case action @ Action.PatentOffice(tile) =>
-      lens.patentOffice.modify(_ - tile) compose
-        forActivePlayer {
-          lens.engineers.modify(_ - action.engineers) compose
-            lens.playerCredits.modify(_ - Credit(5)) compose
-            lens.playerTiles.modify(_ + tile)
-        }
-
-    case Action.ExternalWorks(externalWork: ExternalWork) =>
-      forActivePlayer(lens.engineers.modify(_ - EngineerCount(2)) andThen lens.playerMachinery.modify(_ - externalWork.cost)) andThen
-        lens.externalWorks.modify(_ - externalWork) andThen
-        externalWork.resolve
-
-    case _ => ???
-  }
-
-  def resolve(gameState: GameState, action: Action): GameState = {
-    val nextPlayer = gameState.nextPlayer
-    (resolveAction(action) andThen lens.currentPlayer.set(nextPlayer))(gameState)
-  }
+//  def resolve(gameState: GameState, action: Action): GameState = {
+//    val nextPlayer = gameState.nextPlayer
+//    (resolveAction(action) andThen lens.currentPlayer.set(nextPlayer))(gameState)
+//  }
 
   /*
    * From the rulebook, End of Round is:

@@ -1,6 +1,6 @@
 package com.github.gpoirier.barrage
 
-import actions2._
+import actions._
 
 object commands {
   case class Command(action: Action, rewardsHandlers: List[RewardHandler])
