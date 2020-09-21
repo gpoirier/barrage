@@ -2,6 +2,8 @@ package com.github.gpoirier.barrage
 
 import cats.data.{NonEmptyList, StateT}
 import com.github.gpoirier.barrage.actions.Action
+import resources._
+import literals._
 
 case class GameState(
   currentPlayer: Company,
@@ -119,9 +121,9 @@ sealed trait ExternalWork {
   def resolve: GameState => GameState
 }
 object C1 extends ExternalWork {
-  val cost = Machinery(excavators = 5)
+  val cost: Machinery = 5.excavators
   def resolve: GameState => GameState = {
-    lens.currentPlayerState.modify(lens.points.modify(_ + VictoryPoints(6)) andThen lens.playerMachinery.modify(_ + Machinery(mixers = 3)))
+    lens.currentPlayerState.modify(lens.points.modify(_ ++ 6.vp) andThen lens.playerMachinery.modify(_ ++ 3.mixers))
   }
 }
 

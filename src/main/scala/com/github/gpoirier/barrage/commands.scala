@@ -1,5 +1,6 @@
 package com.github.gpoirier.barrage
 
+import resources._
 import actions._
 
 object commands {

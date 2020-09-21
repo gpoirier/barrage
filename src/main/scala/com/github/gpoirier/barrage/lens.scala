@@ -1,5 +1,6 @@
 package com.github.gpoirier.barrage
 
+import resources._
 import monocle.{Lens, Traversal}
 import monocle.macros.GenLens
 import monocle.function.all._
@@ -13,9 +14,9 @@ object lens {
   val energyProduction: Lens[PlayerState, RoundProduction] = GenLens[PlayerState](_.energyProduction)
   val points: Lens[PlayerState, VictoryPoints] = GenLens[PlayerState](_.points)
 
-  val credits: Lens[Resources, Credit] = GenLens[Resources](_.credit)
+  val credits: Lens[Resources, Credits] = GenLens[Resources](_.credit)
   val machinery: Lens[Resources, Machinery] = GenLens[Resources](_.machinery)
-  val playerCredits: Lens[PlayerState, Credit] = resources composeLens credits
+  val playerCredits: Lens[PlayerState, Credits] = resources composeLens credits
   val playerMachinery: Lens[PlayerState, Machinery] = resources composeLens machinery
 
   val eachPlayers: Traversal[GameState, PlayerState] = lens.players composeTraversal each
