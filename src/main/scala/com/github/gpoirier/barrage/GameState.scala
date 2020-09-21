@@ -55,8 +55,12 @@ object GameState {
   private def resolveCommand: Command => StateT[F, GameState, Unit] = {
     case Command(action: Action.Workshop, Nil) =>
       lens.workshop composeWith Workshop.forAction(action) flatMap { column =>
-        val cost = action.cost(column)
-        lens.currentPlayerState composeWith PlayerState.payCost(cost)
+        lens.currentPlayerState composeWith {
+          for {
+            _ <- PlayerState.payCost(action.cost(column))
+            _ <- PlayerState.spin(action.spin)
+          } yield ()
+        }
       }
   }
 

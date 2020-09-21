@@ -62,7 +62,7 @@ object PlayerState {
       TechnologyTile.allForLevel(0)
     )
 
-  def spin(count: Int): PlayerState => PlayerState = _.spin(count)
+  def spin(count: Int): StateT[Result, PlayerState, Unit] = StateT.modify[Result, PlayerState](_.spin(count))
 
   def payCost: Cost => StateM[PlayerState, Unit] = {
     case Cost(eng, resources) =>
