@@ -1,6 +1,24 @@
 package com.github.gpoirier.barrage
 
+import resources._
+import literals._
+
 object actions {
+
+  case class Cost(engineers: EngineerCount = 0.eng, resources: Resources = Resources.empty)
+
+  sealed trait Reward
+  object Reward {
+    case class WildMachinery(count: Int) extends Reward
+    case class FixedResources(resources: Resources) extends Reward
+    case class Wrench(count: Int) extends Reward
+
+    def apply(resources: Resources): Reward = FixedResources(resources)
+    def wild(count: Int): Reward = WildMachinery(count)
+
+    case class Spin(count: Int) extends Reward
+  }
+
 
   sealed trait LocationCost
   object LocationCost {
@@ -25,11 +43,17 @@ object actions {
   sealed trait Action
 
   object Action {
-    sealed trait Workshop extends Action
+    case class Workshop(spin: Int) extends Action {
+      def reward: Reward.Spin = Reward.Spin(spin)
+      def cost(column: ActionColumn): Cost = (this -> column) match {
+        case (Workshop.One, ActionColumn.Cheap) => Cost(1.eng)
+        case (Workshop.One, ActionColumn.Expensive) => Cost(2.eng)
+      }
+    }
     object Workshop {
-      case object One extends Workshop
-      case object Two extends Workshop
-      case object Three extends Workshop
+      object One extends Workshop(1)
+      object Two extends Workshop(2)
+      object Three extends Workshop(3)
     }
 
     sealed trait MachineShop extends Action

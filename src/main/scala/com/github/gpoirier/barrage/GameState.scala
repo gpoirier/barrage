@@ -1,7 +1,9 @@
 package com.github.gpoirier.barrage
 
+import cats.implicits._
 import cats.data.{NonEmptyList, StateT}
 import com.github.gpoirier.barrage.actions.Action
+import com.github.gpoirier.barrage.commands.Command
 import resources._
 import literals._
 
@@ -11,7 +13,8 @@ case class GameState(
   players: Map[Company, PlayerState],
   patentOffice: PatentOffice,
   externalWorks: ExternalWorks,
-  machineShop: MachineShop.Rows
+  machineShop: MachineShop.Rows,
+  workshop: Workshop.Rows
 ) {
   def currentPlayerState: PlayerState = players(currentPlayer)
 
@@ -29,6 +32,8 @@ case class GameState(
 }
 object GameState {
 
+  type F[A] = Either[String, A]
+
   def initial(turnOrder: NonEmptyList[Company]): GameState =
     GameState(
       currentPlayer = turnOrder.head,
@@ -36,12 +41,24 @@ object GameState {
       players = turnOrder.map(_ -> PlayerState.initial).toList.toMap,
       // TODO Randomize first 3 tiles, and support for preselection with one tile per level removed
       patentOffice = PatentOffice(TechnologyTile.allForLevel(1).take(3)),
-      externalWorks = ExternalWorks(Set(C1)),
-      MachineShop.empty
+      externalWorks = ExternalWorks(Set()),
+      MachineShop.empty,
+      Workshop.empty
     )
 
   private def forActivePlayer(f: PlayerState => PlayerState): GameState => GameState =
     lens.currentPlayerState.modify(f)
+
+  private def forActivePlayerF(f: PlayerState => PlayerState): StateT[F, GameState, Unit] =
+    StateT.modify[F, GameState](forActivePlayer(f))
+
+  private def resolveCommand: Command => StateT[F, GameState, Unit] = {
+    case Command(action: Action.Workshop, Nil) =>
+      lens.workshop composeWith Workshop.forAction(action) flatMap { column =>
+        val cost = action.cost(column)
+        lens.currentPlayerState composeWith PlayerState.payCost(cost)
+      }
+  }
 
 //  private def resolveAction: Action => GameState => GameState = {
 //    case Action.Pass =>
@@ -82,16 +99,24 @@ object GameState {
 //    (resolveAction(action) andThen lens.currentPlayer.set(nextPlayer))(gameState)
 //  }
 
+  def resolve(command: Command): StateM[GameState, Unit] = {
+    for {
+      nextPlayer <- StateT.inspect[Result, GameState, Company](_.nextPlayer)
+      _ <- resolveCommand(command)
+      _ <- StateT.modify[Result, GameState](lens.currentPlayer.set(nextPlayer))
+    } yield ()
+  }
+
   /*
    * From the rulebook, End of Round is:
    *
    * Update the turn order. Put all Energy markers back to space "0". Take all of your Engineers back.
    */
   def endOfRound: GameState => GameState = { state =>
-    val newTurnOrder = state.players.view.mapValues(_.energyProduction.energyCount).toList.sortBy(_._2).map(_._1)
+    val newTurnOrder = state.players.view.mapValues(_.energyProduction.count).toList.sortBy(_._2).map(_._1)
 
     def updateTurnOrder = lens.turnOrder.set(newTurnOrder)
-    def resetEnergyMarkers = lens.energyProduction.set(RoundProduction(0))
+    def resetEnergyMarkers = lens.energyProduction.set(Energy(0))
     def resetEngineers = lens.engineers.set(EngineerCount(12))
 
     val steps = updateTurnOrder andThen
@@ -138,5 +163,25 @@ object MachineShop extends Section {
     excavator = Row.emptyCommonRow,
     wild = Row.emptyCommonRow,
     both = Row.emptyCommonRow,
+  )
+}
+
+object Workshop extends Section {
+  case class Rows(one: Row, two: Row, three: Row)
+
+  def forAction: Action.Workshop => StateT[F, Rows, ActionColumn] = {
+    case Action.Workshop.One => one
+    case Action.Workshop.Two => two
+    case Action.Workshop.Three => three
+  }
+
+  def one: StateT[F, Rows, ActionColumn] = reserve("One", _(_.one))
+  def two: StateT[F, Rows, ActionColumn] = reserve("Two", _(_.two))
+  def three: StateT[F, Rows, ActionColumn] = reserve("Three", _(_.three))
+
+  def empty: Rows = Rows(
+    one = Row.emptyCommonRow,
+    two = Row.emptyCommonRow,
+    three = Row.emptyCommonRow,
   )
 }

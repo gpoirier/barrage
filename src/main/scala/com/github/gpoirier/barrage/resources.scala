@@ -41,6 +41,8 @@ object resources {
       def mixers: Mixers = Mixers(value)
 
       def vp: VictoryPoints = VictoryPoints(value)
+
+      def eng: EngineerCount = EngineerCount(value)
     }
   }
   import literals._
@@ -48,16 +50,19 @@ object resources {
   @newtype case class Credits(count: Int)
   object Credits extends ToMachineryOps[Int] {
     type T = Credits
+    implicit def creditsOrdering: Ordering[Credits] = deriving
   }
 
   @newtype case class Excavators(count: Int)
   object Excavators extends ToMachineryOps[Int] {
     type T = Excavators
+    implicit def excavatorsOrdering: Ordering[Excavators] = deriving
   }
 
   @newtype case class Mixers(count: Int)
   object Mixers extends ToMachineryOps[Int] {
     type T = Mixers
+    implicit def mixerOrdering: Ordering[Mixers] = deriving
   }
 
   case class Machinery(excavators: Excavators = 0.excavator, mixers: Mixers = 0.mixer) {
@@ -92,16 +97,21 @@ object resources {
     implicit def fromMachinery(machinery: Machinery): Resources = Resources(Credits(0), machinery)
   }
 
-  case class EngineerCount(value: Int) extends AnyVal {
-    def --(other: EngineerCount): EngineerCount = EngineerCount(value - other.value)
-    def ++(other: EngineerCount): EngineerCount = EngineerCount(value + other.value)
+  @newtype case class EngineerCount(count: Int)
+  object EngineerCount extends PlusMinusOps[Int] {
+    type T = EngineerCount
+    implicit def engineerCountOrdering: Ordering[EngineerCount] = deriving
   }
 
-  case class VictoryPoints(count: Int) extends AnyVal {
-    def --(other: VictoryPoints): VictoryPoints = VictoryPoints(count - other.count)
-    def ++(other: VictoryPoints): VictoryPoints = VictoryPoints(count + other.count)
+  @newtype case class VictoryPoints(count: Int)
+  object VictoryPoints extends PlusMinusOps[Int] {
+    type T = VictoryPoints
   }
-  case class RoundProduction(energyCount: Int)
+
+  @newtype case class Energy(count: Int)
+  object Energy extends PlusMinusOps[Int] {
+    type T = Energy
+  }
 
   case class WheelSlot(tile: Option[TechnologyTile], machinery: Machinery)
   object WheelSlot {
