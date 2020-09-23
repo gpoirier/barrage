@@ -52,7 +52,7 @@ object GameState {
   private def forActivePlayerF(f: PlayerState => PlayerState): StateT[F, GameState, Unit] =
     StateT.modify[F, GameState](forActivePlayer(f))
 
-  private def resolveCommand: Command => StateT[F, GameState, Unit] = {
+  private[barrage] def resolveCommand: Command => StateT[F, GameState, Unit] = {
     case Command(action: Action.Workshop, Nil) =>
       lens.workshop composeWith Workshop.forAction(action) flatMap { column =>
         lens.currentPlayerState composeWith {

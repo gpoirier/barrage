@@ -68,10 +68,10 @@ object PlayerState {
     case Cost(eng, resources) =>
       StateT.modifyF[Result, PlayerState] { ps =>
         ps.pure[Result]
-          .ensure("Not enough engineers")(_.engineers < eng)
-          .ensure("Not enough credit")(_.resources.credit < resources.credit)
-          .ensure("Not enough excavator")(_.resources.machinery.excavators < resources.machinery.excavators)
-          .ensure("Not enough mixer")(_.resources.machinery.mixers < resources.machinery.mixers)
+          .ensure("Not enough engineers")(_.engineers >= eng)
+          .ensure("Not enough credit")(_.resources.credit >= resources.credit)
+          .ensure("Not enough excavator")(_.resources.machinery.excavators >= resources.machinery.excavators)
+          .ensure("Not enough mixer")(_.resources.machinery.mixers >= resources.machinery.mixers)
           .map {
             lens.engineers.modify(_ -- eng) compose lens.resources.modify(_ -- resources)
           }

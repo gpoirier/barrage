@@ -29,6 +29,8 @@ object lens {
   val externalWorks: Lens[GameState, ExternalWorks] = GenLens[GameState](_.externalWorks)
   val turnOrder: Lens[GameState, List[Company]] = GenLens[GameState](_.turnOrder)
 
+  val playerWheel: Lens[GameState, Wheel] = currentPlayerState composeLens wheel
+
   // Sections
   val workshop: Lens[GameState, Workshop.Rows] = GenLens[GameState](_.workshop)
   val machineShop: Lens[GameState, MachineShop.Rows] = GenLens[GameState](_.machineShop)

@@ -1,14 +1,54 @@
-//package com.github.gpoirier.barrage
-//
-//import cats.data.NonEmptyList
-//import org.scalatest.flatspec.AnyFlatSpec
-//import org.scalatest.matchers.should.Matchers
-//
-//import actions._
-//
-//class GameStateSpec extends AnyFlatSpec with Matchers {
-//  behavior of "resolve"
-//
+package com.github.gpoirier.barrage
+
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+
+import scala.collection.immutable.Queue
+import cats.implicits._
+import cats.data._
+
+import actions._
+import commands._
+import resources._
+import literals._
+
+class GameStateSpec extends AnyFlatSpec with Matchers {
+  behavior of "resolve"
+
+  it should "support taking spin actions" in {
+    val empty = WheelSlot.empty
+    val slot = WheelSlot(Some(TechnologyTile(1, Some(StructureType.Elevation))), 2.mixers)
+    val initial = GameState.initial(NonEmptyList.of(USA, Italy, Germany))
+    val addCredits = (lens.currentPlayerState composeLens lens.playerCredits).modify(_ ++ 5.credits)
+    val pushWheel = lens.playerWheel.modify(_.push(slot)._2)
+    val before = (pushWheel compose addCredits)(initial)
+
+    val getWheel: StateM[GameState, Wheel] = StateT.inspect(lens.playerWheel.get)
+    val getEng: StateM[GameState, EngineerCount] = StateT.inspect((lens.currentPlayerState composeLens lens.engineers).get)
+    val getCredits: StateM[GameState, Credits] = StateT.inspect((lens.currentPlayerState composeLens lens.playerCredits).get)
+
+    val op = for {
+      _ <- getWheel.map(_.slots shouldBe Queue(empty, empty, empty, empty, slot))
+      _ <- getEng.map(_ shouldBe 12.eng)
+      _ <- getCredits.map(_ shouldBe 11.credits)
+
+      _ <- GameState.resolveCommand(Command(Action.Workshop.Two, Nil))
+      _ <- getWheel.map(_.slots shouldBe Queue(empty, empty, slot, empty, empty))
+      _ <- getEng.map(_ shouldBe 10.eng)
+
+      _ <- GameState.resolveCommand(Command(Action.Workshop.Two, Nil))
+      _ <- getWheel.map(_.slots shouldBe Queue(slot, empty, empty, empty, empty))
+      _ <- getEng.map(_ shouldBe 7.eng)
+
+      result <- StateT.inspect[Result, GameState, String] { gs =>
+        GameState.resolveCommand(Command(Action.Workshop.Two, Nil)).run(gs)
+          .fold(identity, _ => fail("The third spin should fail"))
+      }
+    } yield result
+
+    op.run(before).fold(fail(_), _._2 shouldBe "No empty action spot left (Two)")
+  }
+
 //  it should "support taking a single excavator" in {
 //    val initial = GameState.initial(NonEmptyList.of(USA, Italy, Germany))
 //    val after = GameState.resolve(initial, Action.MachineShop.excavator.cheap)
@@ -47,4 +87,4 @@
 //    after.players(Italy).resources shouldBe Resources(Credit(6), Machinery(excavators = 1, mixers = 7))
 //    after.players(Italy).points shouldBe VictoryPoints(16)
 //  }
-//}
+}

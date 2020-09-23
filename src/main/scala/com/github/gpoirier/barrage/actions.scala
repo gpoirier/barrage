@@ -48,6 +48,10 @@ object actions {
       def cost(column: ActionColumn): Cost = (this -> column) match {
         case (Workshop.One, ActionColumn.Cheap) => Cost(1.eng)
         case (Workshop.One, ActionColumn.Expensive) => Cost(2.eng)
+        case (Workshop.Two, ActionColumn.Cheap) => Cost(2.eng, 2.credits)
+        case (Workshop.Two, ActionColumn.Expensive) => Cost(3.eng, 5.credits)
+        case (Workshop.Three, ActionColumn.Cheap) => Cost(2.eng, 5.credits)
+        case (Workshop.Three, ActionColumn.Expensive) => Cost(3.eng, 8.credits)
       }
     }
     object Workshop {
