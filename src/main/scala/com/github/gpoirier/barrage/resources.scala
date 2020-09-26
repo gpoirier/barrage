@@ -25,7 +25,9 @@ object resources {
 
     implicit class MachineryOps(value: T) {
       def &[B: ToMachinery](other: B)(implicit ev: ToMachinery[T]): Machinery =
-        ToMachinery[T].lift(value) ++ ToMachinery[B].lift(other)
+        ToMachinery[T].to(value) ++ ToMachinery[B].to(other)
+
+      def toMachinery(implicit ev: ToMachinery[T]): Machinery = ToMachinery[T].to(value)
     }
   }
 
@@ -57,12 +59,14 @@ object resources {
   object Excavators extends ToMachineryOps[Int] {
     type T = Excavators
     implicit def excavatorsOrdering: Ordering[Excavators] = deriving
+    implicit def fromExcavator: ToMachinery[Excavators] = ToMachinery.instance(e => Machinery(e))
   }
 
   @newtype case class Mixers(count: Int)
   object Mixers extends ToMachineryOps[Int] {
     type T = Mixers
     implicit def mixerOrdering: Ordering[Mixers] = deriving
+    implicit def fromMixer: ToMachinery[Mixers] = ToMachinery.instance(m => Machinery(mixers = m))
   }
 
   case class Machinery(excavators: Excavators = 0.excavator, mixers: Mixers = 0.mixer) {
@@ -77,14 +81,12 @@ object resources {
   }
 
   @typeclass trait ToMachinery[A] {
-    def lift(value: A): Machinery
-    def add(x: A, y: A): Machinery = lift(x) ++ lift(y)
-    def minus(x: A, y: A): Machinery = lift(x) -- lift(y)
+    def to(value: A): Machinery
+    def add(x: A, y: A): Machinery = to(x) ++ to(y)
+    def minus(x: A, y: A): Machinery = to(x) -- to(y)
   }
   object ToMachinery {
     def instance[A](fn: A => Machinery): ToMachinery[A] = value => fn(value)
-    implicit def fromExcavator: ToMachinery[Excavators] = instance(e => Machinery(e))
-    implicit def fromMixer: ToMachinery[Mixers] = instance(m => Machinery(mixers = m))
   }
 
   case class Resources(credit: Credits, machinery: Machinery) {

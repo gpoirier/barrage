@@ -4,12 +4,12 @@ import resources._
 import actions._
 
 object commands {
-  case class Command(action: Action, rewardsHandlers: List[RewardHandler])
+  case class Command(action: Action, rewardsHandlers: List[RewardSelector])
 
-  sealed trait RewardHandler
+  sealed trait RewardSelector
   object RewardSelector {
-    case class WildMachinery(choices: Machinery) extends RewardHandler
-    // case class ExternalWork(id: ExternalWork.Id) extends RewardHandler
-    // case class Contract(id: Contract.Id) extends RewardHandler
+    case class WildMachinery(choices: Machinery) extends RewardSelector
+    // case class ExternalWork(id: ExternalWork.Id) extends RewardSelector
+    // case class Contract(id: Contract.Id) extends RewardSelector
   }
 }
