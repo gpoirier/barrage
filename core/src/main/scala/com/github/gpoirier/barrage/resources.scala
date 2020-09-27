@@ -12,11 +12,13 @@ object resources {
   abstract class PlusMinusOps[A: Numeric] {
     type T
 
+    import Numeric.Implicits._
+
     implicit class PlusMinusOps(value: T) {
       def ++(other: T)(implicit ev1: Coercible[T, A], ev2: Coercible[A, T]): T =
-        Numeric[A].plus(value.coerce, other.coerce[A]).coerce[T]
+        (value.coerce + other.coerce[A]).coerce[T]
       def --(other: T)(implicit ev1: Coercible[T, A], ev2: Coercible[A, T]): T =
-        Numeric[A].minus(value.coerce, other.coerce[A]).coerce[T]
+        (value.coerce - other.coerce[A]).coerce[T]
     }
   }
 
