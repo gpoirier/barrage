@@ -27,8 +27,13 @@ lazy val core = project
 lazy val cli = project
   .settings(
     name := "barrage-cli",
+    scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
-      "org.jline" % "jline" % "3.9.0"
+      "org.jline" % "jline-reader" % "3.16.0",
+      "org.jline" % "jline-console" % "3.16.0",
+      "org.jline" % "jline-terminal" % "3.16.0",
+      "org.jline" % "jline-builtins" % "3.16.0",
+      "org.typelevel" %% "cats-effect" % "2.2.0"
     )
   )
 
