@@ -46,6 +46,8 @@ object GameState {
       Workshop.empty
     )
 
+  def simple: GameState = initial(NonEmptyList.of(USA, Germany, Italy, France))
+
   private def forActivePlayer(f: PlayerState => PlayerState): GameState => GameState =
     lens.currentPlayerState.modify(f)
 

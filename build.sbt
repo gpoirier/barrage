@@ -25,6 +25,7 @@ lazy val core = project
   )
 
 lazy val cli = project
+  .dependsOn(core)
   .settings(
     name := "barrage-cli",
     scalacOptions -= "-Xfatal-warnings",
