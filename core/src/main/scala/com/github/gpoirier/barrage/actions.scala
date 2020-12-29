@@ -9,6 +9,7 @@ object actions {
 
   sealed trait Reward
   object Reward {
+
     case class WildMachinery(count: Int) extends Reward
     case class FixedResources(resources: Resources) extends Reward
     case class Wrench(count: Int) extends Reward
@@ -60,11 +61,20 @@ object actions {
       object Three extends Workshop(3)
     }
 
-    sealed trait MachineShop extends Action
+    case class MachineShop(machinery: Machinery) extends Action {
+      def cost(column: ActionColumn): Cost = this -> column match {
+        case (MachineShop.Excavator, ActionColumn.Cheap) => Cost(1.eng, 2.credit)
+        case (MachineShop.Excavator, ActionColumn.Expensive) => Cost(1.eng, 5.credit)
+        //case (MachineShop.Wild, ActionColumn.Cheap) => Cost(1.eng, 4.credit)
+        //case (MachineShop.Wild, ActionColumn.Expensive) => Cost(2.eng, 4.credit)
+        case (MachineShop.Both, ActionColumn.Cheap) => Cost(2.eng, 5.credit)
+        case (MachineShop.Both, ActionColumn.Expensive) => Cost(3.eng, 8.credit)
+      }
+    }
     object MachineShop {
-      case object Excavator extends MachineShop
-      case object Wild extends MachineShop
-      case object Both extends MachineShop
+      object Excavator extends MachineShop(Machinery(1.excavator))
+      object Wild extends MachineShop(Machinery(1.excavator)) // not sure how to handle this..
+      object Both extends MachineShop(Machinery(1.excavator, 1.mixers))
     }
   }
 }

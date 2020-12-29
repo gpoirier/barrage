@@ -78,4 +78,6 @@ object PlayerState {
       }
   }
 
+  def addResources(resources: Resources): StateT[Result, PlayerState, Unit] = StateT.modify[Result, PlayerState](lens.resources.modify(_ ++ resources))
+
 }

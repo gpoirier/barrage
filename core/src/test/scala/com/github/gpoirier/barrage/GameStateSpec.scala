@@ -49,17 +49,21 @@ class GameStateSpec extends AnyFlatSpec with Matchers {
     op.run(before).fold(fail(_), _._2 shouldBe "No empty action spot left (Two)")
   }
 
-//  it should "support taking a single excavator" in {
-//    val initial = GameState.initial(NonEmptyList.of(USA, Italy, Germany))
-//    val after = GameState.resolve(initial, Action.MachineShop.excavator.cheap)
-//
-//    initial.currentPlayer shouldBe USA
-//    initial.nextPlayer shouldBe Italy
-//    initial.players(USA).resources shouldBe Resources(Credit(6), Machinery(excavators = 6, mixers = 4))
-//
-//    after.currentPlayer shouldBe Italy
-//    after.players(USA).resources shouldBe Resources(Credit(4), Machinery(excavators = 7, mixers = 4))
-//  }
+  it should "support taking a single excavator" in {
+    val initial: GameState = GameState.initial(NonEmptyList.of(USA))
+    val getCredits: StateM[GameState, Credits] = StateT.inspect((lens.currentPlayerState composeLens lens.playerCredits).get)
+    val getMachinery: StateM[GameState, Machinery] = StateT.inspect((lens.currentPlayerState composeLens lens.playerMachinery).get)
+
+    val op = for {
+      _ <- getCredits.map(_ shouldBe 6.credits)
+      _ <- getMachinery.map(_ shouldBe Machinery(6.excavators, 4.mixers))
+      _ <- GameState.resolveCommand(Command(Action.MachineShop.Excavator, Nil))
+      _ <- getCredits.map(_ shouldBe 4.credits)
+      _ <- getMachinery.map(_ shouldBe Machinery(7.excavators, 4.mixers))
+    } yield ()
+
+    op.run(initial)
+  }
 //
 //  it should "support taking a single mixer with the expensive choice spot" in {
 //    val initial = GameState.initial(NonEmptyList.of(USA, Italy, Germany, Netherlands))
