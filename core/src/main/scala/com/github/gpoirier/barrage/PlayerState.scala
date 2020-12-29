@@ -2,7 +2,7 @@ package com.github.gpoirier.barrage
 
 import cats.implicits._
 import cats.data._
-import actions.{Cost, Reward}
+import actions.Cost
 import resources._
 import literals._
 
@@ -80,10 +80,10 @@ object PlayerState {
 
   def addResources(resources: Resources): StateT[Result, PlayerState, Unit] = StateT.modify[Result, PlayerState](lens.resources.modify(_ ++ resources))
 
-  def resolveReward: Reward => StateT[Result, PlayerState, Unit] = {
-    case Reward.FixedResources(resources) => addResources(resources)
-    case Reward.Spin(count) => spin(count)
-    case Reward.Machinery(machinery) => addResources(Resources(0.credit, machinery))
-    case Reward.WildMachinery(machinery) => addResources(Resources(0.credit, machinery))
-  }
+//  def resolveReward: Reward => StateT[Result, PlayerState, Unit] = {
+//    case Reward.FixedResources(resources) => addResources(resources)
+//    case Reward.Spin(count) => spin(count)
+//    case Reward.Machinery(machinery) => addResources(Resources(0.credit, machinery))
+//    case Reward.WildMachinery(machinery) => addResources(Resources(0.credit, machinery))
+//  }
 }

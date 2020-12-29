@@ -1,6 +1,5 @@
 package com.github.gpoirier.barrage
 
-import com.github.gpoirier.barrage.actions.Reward.FixedResources
 import resources._
 import literals._
 
@@ -12,8 +11,7 @@ object actions {
   sealed trait MachineryReward extends Reward
   object Reward {
 
-    case class WildMachinery(machinery: resources.Machinery) extends MachineryReward
-    case class Machinery(machinery: resources.Machinery) extends MachineryReward
+    case class WildMachinery(count: Int) extends MachineryReward
     case class FixedResources(resources: Resources) extends Reward
     case class Wrench(count: Int) extends Reward
 
@@ -47,7 +45,7 @@ object actions {
   sealed trait Action
 
   object Action {
-    case class Workshop(spin: Int) extends Action {
+    sealed abstract class Workshop(val spin: Int) extends Action {
       def reward: Reward.Spin = Reward.Spin(spin)
       def cost(column: ActionColumn): Cost = this -> column match {
         case (Workshop.One, ActionColumn.Cheap) => Cost(1.eng)
@@ -64,23 +62,20 @@ object actions {
       object Three extends Workshop(3)
     }
 
-    case class MachineShop(val reward: Reward) extends Action {
+    sealed abstract class MachineShop(val reward: Reward) extends Action {
       def cost(column: ActionColumn): Cost = this -> column match {
         case (MachineShop.Excavator, ActionColumn.Cheap) => Cost(1.eng, 2.credit)
         case (MachineShop.Excavator, ActionColumn.Expensive) => Cost(1.eng, 5.credit)
-        case (MachineShop.WildForExcavator, ActionColumn.Cheap) => Cost(1.eng, 4.credit)
-        case (MachineShop.WildForExcavator, ActionColumn.Expensive) => Cost(2.eng, 4.credit)
-        case (MachineShop.WildForMixer, ActionColumn.Cheap) => Cost(1.eng, 4.credit)
-        case (MachineShop.WildForMixer, ActionColumn.Expensive) => Cost(2.eng, 4.credit)
+        case (MachineShop.Wild, ActionColumn.Cheap) => Cost(1.eng, 4.credit)
+        case (MachineShop.Wild, ActionColumn.Expensive) => Cost(2.eng, 4.credit)
         case (MachineShop.Both, ActionColumn.Cheap) => Cost(2.eng, 5.credit)
         case (MachineShop.Both, ActionColumn.Expensive) => Cost(3.eng, 8.credit)
       }
     }
     object MachineShop {
-      object Excavator extends MachineShop(Reward.Machinery(1.excavators))
-      object WildForExcavator extends MachineShop(Reward.WildMachinery(1.excavators))
-      object WildForMixer extends MachineShop(Reward.WildMachinery(1.mixer))
-      object Both extends MachineShop(Reward.Machinery(Machinery(1.excavators, 1.mixer)))
+      object Excavator extends MachineShop(Reward.FixedResources(Machinery(1.excavators)))
+      object Wild extends MachineShop(Reward.WildMachinery(1))
+      object Both extends MachineShop(Reward.FixedResources(Machinery(1.excavators, 1.mixer)))
     }
   }
 }

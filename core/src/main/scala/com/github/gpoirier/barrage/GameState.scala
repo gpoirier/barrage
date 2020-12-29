@@ -2,7 +2,7 @@ package com.github.gpoirier.barrage
 
 import cats.implicits._
 import cats.data.{NonEmptyList, StateT}
-import com.github.gpoirier.barrage.actions.{Action, Reward}
+import com.github.gpoirier.barrage.actions.Action
 import com.github.gpoirier.barrage.commands.Command
 import resources._
 import literals._
@@ -60,19 +60,19 @@ object GameState {
         lens.currentPlayerState composeWith {
           for {
             _ <- PlayerState.payCost(action.cost(column))
-            _ <- PlayerState.resolveReward(action.reward)
+            _ <- PlayerState.spin(action.spin)
           } yield ()
         }
       }
-    case Command(action: Action.MachineShop, Nil) =>
-      lens.machineShop composeWith MachineShop.forAction(action) flatMap { column =>
-        lens.currentPlayerState composeWith {
-          for {
-            _ <- PlayerState.payCost(action.cost(column))
-            _ <- PlayerState.resolveReward(action.reward)
-          } yield ()
-        }
-      }
+//    case Command(action: Action.MachineShop, Nil) =>
+//      lens.machineShop composeWith MachineShop.forAction(action) flatMap { column =>
+//        lens.currentPlayerState composeWith {
+//          for {
+//            _ <- PlayerState.payCost(action.cost(column))
+//            _ <- PlayerState.resolveReward(action.reward)
+//          } yield ()
+//        }
+//      }
   }
 
 //  private def resolveAction: Action => GameState => GameState = {
@@ -172,8 +172,7 @@ object MachineShop extends Section {
 
   def forAction: Action.MachineShop => StateT[F, Rows, ActionColumn] = {
     case Action.MachineShop.Excavator => excavator
-    case Action.MachineShop.WildForExcavator => wild
-    case Action.MachineShop.WildForMixer => wild
+    case Action.MachineShop.Wild => wild
     case Action.MachineShop.Both => both
   }
 
