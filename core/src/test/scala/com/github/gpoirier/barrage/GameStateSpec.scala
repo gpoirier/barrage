@@ -49,6 +49,48 @@ class GameStateSpec extends AnyFlatSpec with Matchers {
     op.run(before).fold(fail(_), _._2 shouldBe "No empty action spot left (Two)")
   }
 
+  it should "ensure spin costs are correct" in {
+    val initial = GameState.initial(NonEmptyList.of(USA, Italy, Germany))
+    val addCredits = (lens.currentPlayerState composeLens lens.playerCredits).modify(_ ++ 14.credits)
+    val addEng = (lens.currentPlayerState composeLens lens.engineers).modify(_ ++ EngineerCount(1))
+    val before = (addCredits compose addEng)(initial)
+
+    val getEng: StateM[GameState, EngineerCount] = StateT.inspect((lens.currentPlayerState composeLens lens.engineers).get)
+    val getCredits: StateM[GameState, Credits] = StateT.inspect((lens.currentPlayerState composeLens lens.playerCredits).get)
+
+    val op = for {
+      _ <- getEng.map(_ shouldBe 13.eng)
+      _ <- getCredits.map(_ shouldBe 20.credits)
+
+      _ <- GameState.resolveCommand(Command(Action.Workshop.One, Nil))
+      _ <- getEng.map(_ shouldBe 12.eng)
+      _ <- getCredits.map(_ shouldBe 20.credits)
+
+      _ <- GameState.resolveCommand(Command(Action.Workshop.One, Nil))
+      _ <- getEng.map(_ shouldBe 10.eng)
+      _ <- getCredits.map(_ shouldBe 20.credits)
+
+      _ <- GameState.resolveCommand(Command(Action.Workshop.Two, Nil))
+      _ <- getEng.map(_ shouldBe 8.eng)
+      _ <- getCredits.map(_ shouldBe 18.credits)
+
+      _ <- GameState.resolveCommand(Command(Action.Workshop.Two, Nil))
+      _ <- getEng.map(_ shouldBe 5.eng)
+      _ <- getCredits.map(_ shouldBe 13.credits)
+
+      _ <- GameState.resolveCommand(Command(Action.Workshop.Three, Nil))
+      _ <- getEng.map(_ shouldBe 3.eng)
+      _ <- getCredits.map(_ shouldBe 8.credits)
+
+      _ <- GameState.resolveCommand(Command(Action.Workshop.Three, Nil))
+      _ <- getEng.map(_ shouldBe 0.eng)
+      _ <- getCredits.map(_ shouldBe 0.credits)
+
+    } yield ()
+
+    op.run(before)
+  }
+
 //  it should "support taking a single excavator" in {
 //    val initial = GameState.initial(NonEmptyList.of(USA, Italy, Germany))
 //    val after = GameState.resolve(initial, Action.MachineShop.excavator.cheap)
