@@ -53,16 +53,59 @@ class GameStateSpec extends AnyFlatSpec with Matchers {
     val initial: GameState = GameState.initial(NonEmptyList.of(USA))
     val getCredits: StateM[GameState, Credits] = StateT.inspect((lens.currentPlayerState composeLens lens.playerCredits).get)
     val getMachinery: StateM[GameState, Machinery] = StateT.inspect((lens.currentPlayerState composeLens lens.playerMachinery).get)
+    val getEng: StateM[GameState, EngineerCount] = StateT.inspect((lens.currentPlayerState composeLens lens.engineers).get)
 
     val op = for {
+      // checking before state
       _ <- getCredits.map(_ shouldBe 6.credits)
       _ <- getMachinery.map(_ shouldBe Machinery(6.excavators, 4.mixers))
+      _ <- getEng.map(_ shouldBe 12.eng)
+
+      // taking an excavator
       _ <- GameState.resolveCommand(Command(Action.MachineShop.Excavator, Nil))
       _ <- getCredits.map(_ shouldBe 4.credits)
       _ <- getMachinery.map(_ shouldBe Machinery(7.excavators, 4.mixers))
+      _ <- getEng.map(_ shouldBe 11.eng)
+
     } yield ()
 
     op.run(initial)
+  }
+
+  it should "ensure MachineShop.WildForExcavator and MachineShop.WildForMixer work and occupy the same spot" in {
+    val initial: GameState = GameState.initial(NonEmptyList.of(USA))
+    val getCredits: StateM[GameState, Credits] = StateT.inspect((lens.currentPlayerState composeLens lens.playerCredits).get)
+    val getMachinery: StateM[GameState, Machinery] = StateT.inspect((lens.currentPlayerState composeLens lens.playerMachinery).get)
+    val getEng: StateM[GameState, EngineerCount] = StateT.inspect((lens.currentPlayerState composeLens lens.engineers).get)
+    val addCredits = (lens.currentPlayerState composeLens lens.playerCredits).modify(_ ++ 10.credits)
+    val before = addCredits(initial)
+
+    val op = for {
+      // checking before state
+      _ <- getCredits.map(_ shouldBe 16.credits)
+      _ <- getMachinery.map(_ shouldBe Machinery(6.excavators, 4.mixers))
+      _ <- getEng.map(_ shouldBe 12.eng)
+
+      // taking an excavator with wild spot
+      _ <- GameState.resolveCommand(Command(Action.MachineShop.WildForExcavator, Nil))
+      _ <- getCredits.map(_ shouldBe 12.credits)
+      _ <- getMachinery.map(_ shouldBe Machinery(7.excavators, 4.mixers))
+      _ <- getEng.map(_ shouldBe 11.eng)
+
+      // taking a mixer with wild spot
+      _ <- GameState.resolveCommand(Command(Action.MachineShop.WildForMixer, Nil))
+      _ <- getCredits.map(_ shouldBe 8.credits)
+      _ <- getMachinery.map(_ shouldBe Machinery(7.excavators, 5.mixers))
+      _ <- getEng.map(_ shouldBe 9.eng)
+
+      // trying to use the wild spot again
+      result <- StateT.inspect[Result, GameState, String] { gs =>
+        GameState.resolveCommand(Command(Action.MachineShop.WildForMixer, Nil)).run(gs)
+          .fold(identity, _ => fail("The third action should fail"))
+      }
+    } yield result
+
+    op.run(before).fold(fail(_), _._2 shouldBe "No empty action spot left (Wild)")
   }
 //
 //  it should "support taking a single mixer with the expensive choice spot" in {
