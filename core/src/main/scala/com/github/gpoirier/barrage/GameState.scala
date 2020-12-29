@@ -172,7 +172,7 @@ object MachineShop extends Section {
 
   def forAction: Action.MachineShop => StateT[F, Rows, ActionColumn] = {
     case Action.MachineShop.Excavator => excavator
-    //case Action.MachineShop.Wild => wild
+    case Action.MachineShop.Wild => wild
     case Action.MachineShop.Both => both
   }
 
