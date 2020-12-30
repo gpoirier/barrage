@@ -64,6 +64,15 @@ object GameState {
           } yield ()
         }
       }
+//    case Command(action: Action.MachineShop, Nil) =>
+//      lens.machineShop composeWith MachineShop.forAction(action) flatMap { column =>
+//        lens.currentPlayerState composeWith {
+//          for {
+//            _ <- PlayerState.payCost(action.cost(column))
+//            _ <- PlayerState.resolveReward(action.reward)
+//          } yield ()
+//        }
+//      }
   }
 
 //  private def resolveAction: Action => GameState => GameState = {
@@ -160,6 +169,12 @@ object C1 extends ExternalWork {
 
 object MachineShop extends Section {
   case class Rows(excavator: Row, wild: Row, both: Row)
+
+  def forAction: Action.MachineShop => StateT[F, Rows, ActionColumn] = {
+    case Action.MachineShop.Excavator => excavator
+    case Action.MachineShop.Wild => wild
+    case Action.MachineShop.Both => both
+  }
 
   def excavator: StateT[F, Rows, ActionColumn] = reserve("Excavator", _(_.excavator))
   def wild: StateT[F, Rows, ActionColumn] = reserve("Wild", _(_.wild))

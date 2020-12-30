@@ -8,13 +8,15 @@ object actions {
   case class Cost(engineers: EngineerCount = 0.eng, resources: Resources = Resources.empty)
 
   sealed trait Reward
+  sealed trait MachineryReward extends Reward
   object Reward {
-    case class WildMachinery(count: Int) extends Reward
+
+    case class WildMachinery(count: Int) extends MachineryReward
     case class FixedResources(resources: Resources) extends Reward
     case class Wrench(count: Int) extends Reward
 
     def apply(resources: Resources): Reward = FixedResources(resources)
-    def wild(count: Int): Reward = WildMachinery(count)
+//    def wild(count: Int): Reward = WildMachinery(count)
 
     case class Spin(count: Int) extends Reward
   }
@@ -43,7 +45,7 @@ object actions {
   sealed trait Action
 
   object Action {
-    case class Workshop(spin: Int) extends Action {
+    sealed abstract class Workshop(val spin: Int) extends Action {
       def reward: Reward.Spin = Reward.Spin(spin)
       def cost(column: ActionColumn): Cost = this -> column match {
         case (Workshop.One, ActionColumn.Cheap) => Cost(1.eng)
@@ -60,11 +62,20 @@ object actions {
       object Three extends Workshop(3)
     }
 
-    sealed trait MachineShop extends Action
+    sealed abstract class MachineShop(val reward: Reward) extends Action {
+      def cost(column: ActionColumn): Cost = this -> column match {
+        case (MachineShop.Excavator, ActionColumn.Cheap) => Cost(1.eng, 2.credit)
+        case (MachineShop.Excavator, ActionColumn.Expensive) => Cost(1.eng, 5.credit)
+        case (MachineShop.Wild, ActionColumn.Cheap) => Cost(1.eng, 4.credit)
+        case (MachineShop.Wild, ActionColumn.Expensive) => Cost(2.eng, 4.credit)
+        case (MachineShop.Both, ActionColumn.Cheap) => Cost(2.eng, 5.credit)
+        case (MachineShop.Both, ActionColumn.Expensive) => Cost(3.eng, 8.credit)
+      }
+    }
     object MachineShop {
-      case object Excavator extends MachineShop
-      case object Wild extends MachineShop
-      case object Both extends MachineShop
+      object Excavator extends MachineShop(Reward.FixedResources(Machinery(1.excavators)))
+      object Wild extends MachineShop(Reward.WildMachinery(1))
+      object Both extends MachineShop(Reward.FixedResources(Machinery(1.excavators, 1.mixer)))
     }
   }
 }
