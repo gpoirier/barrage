@@ -19,6 +19,12 @@ class ActionParserSpec extends AnyFlatSpec with Matchers with Inside {
     inside(parse("workshop 1 spin")) {
       case Success(action, _) => action shouldBe Action.Workshop.One
     }
+    inside(parse("workshop 2 spin")) {
+      case Success(action, _) => action shouldBe Action.Workshop.Two
+    }
+    inside(parse("2 spin")) {
+      case Success(action, _) => action shouldBe Action.Workshop.Two
+    }
     inside(parse("3 spin")) {
       case Success(action, _) => action shouldBe Action.Workshop.Three
     }
