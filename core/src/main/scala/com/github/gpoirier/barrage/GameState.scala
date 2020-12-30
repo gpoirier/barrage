@@ -1,7 +1,9 @@
 package com.github.gpoirier.barrage
 
 import cats.implicits._
-import cats.data.{NonEmptyList, StateT}
+import cats.data._
+import monocle._
+import monocle.macros.GenLens
 
 import actions._
 import commands._
@@ -33,6 +35,8 @@ case class GameState(
 }
 object GameState {
 
+  case class RewardResolver(game: GameState, selectors: Chain[RewardSelector])
+
   type F[A] = Either[String, A]
 
   def initial(turnOrder: NonEmptyList[Company]): GameState =
@@ -56,18 +60,34 @@ object GameState {
     StateT.modify[F, GameState](forActivePlayer(f))
 
   private[barrage] def resolveCommand(command: Command): StateT[F, GameState, Unit] = {
-    for {
-      cost <- command.action.take
-      _ <- lens.currentPlayerState composeWith PlayerState.payCost(cost)
+    val gameState: Lens[RewardResolver, GameState] = GenLens[RewardResolver](_.game)
+
+    val op = for {
+      cost <- gameState composeWith command.action.take
+      _ <- gameState composeLens lens.currentPlayerState composeWith PlayerState.payCost(cost)
       _ <- command.action.rewards.value.traverse {
         case reward: CompleteReward =>
-          StateT.modify[Result, GameState](reward.update)
+          gameState composeWith StateT.modify[Result, GameState](reward.update)
         case reward: IncompleteReward =>
-          // FIXME
-          val selector = command.rewardsHandlers.head
-          reward.update(selector)
+          StateT[Result, RewardResolver, Unit] {
+            case RewardResolver(game, selectors) =>
+              selectors.deleteFirst(reward.update.isDefinedAt) match {
+                case Some(selector -> acc) =>
+                  reward.update(selector).run(game) map {
+                    case (gs, ()) => RewardResolver(gs, acc) -> {}
+                  }
+                case None =>
+                  Left(s"Cannot find a reward selector for incomplete reward: $reward")
+              }
+          }
       }
     } yield ()
+
+    StateT { state =>
+      op.run(RewardResolver(state, command.rewardsSelectors)) map {
+        case (s, ()) => s.game -> {}
+      }
+    }
   }
 
 //  private def resolveAction: Action => GameState => GameState = {
