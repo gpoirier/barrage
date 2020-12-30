@@ -1,24 +1,56 @@
 package com.github.gpoirier.barrage
 
+import cats.implicits._
+import cats.data._
+import io.estatico.newtype.macros.newtype
+
 import resources._
 import literals._
+import commands._
 
 object actions {
 
   case class Cost(engineers: EngineerCount = 0.eng, resources: Resources = Resources.empty)
 
-  sealed trait Reward
-  sealed trait MachineryReward extends Reward
+  @newtype
+  case class Rewards(value: NonEmptyChain[Reward])
+  object Rewards {
+    def apply(first: Reward, tail: Reward*): Rewards = Rewards(NonEmptyChain(first, tail: _*))
+  }
+
+  sealed trait Reward {
+    def isComplete: Boolean
+  }
+  sealed trait CompleteReward extends Reward {
+    def isComplete: Boolean = true
+    def update: GameState => GameState
+  }
+  sealed trait PlayerStateCompleteReward extends CompleteReward {
+    final def update: GameState => GameState = lens.currentPlayerState.modify(updatePlayer)
+    def updatePlayer: PlayerState => PlayerState
+  }
+  sealed trait IncompleteReward extends Reward {
+    def isComplete: Boolean = false
+    def update: PartialFunction[RewardSelector, StateM[GameState, Unit]]
+  }
+
   object Reward {
 
-    case class WildMachinery(count: Int) extends MachineryReward
-    case class FixedResources(resources: Resources) extends Reward
-    case class Wrench(count: Int) extends Reward
+    case class WildMachinery(count: Int) extends IncompleteReward {
+      def update: PartialFunction[RewardSelector, StateM[GameState, Unit]] = {
+        case RewardSelector.WildMachinery(choices) if choices.count == 1 =>
+          StateT.modify((lens.currentPlayerState composeLens lens.resources).modify(_ ++ choices))
+      }
+    }
+    case class FixedResources(resources: Resources) extends PlayerStateCompleteReward {
+      def updatePlayer: PlayerState => PlayerState = lens.resources.modify(_ ++ resources)
+    }
+    case class Wrench(count: Int) extends PlayerStateCompleteReward {
+      def updatePlayer: PlayerState => PlayerState = _.spin(count)
+    }
 
     def apply(resources: Resources): Reward = FixedResources(resources)
-//    def wild(count: Int): Reward = WildMachinery(count)
-
-    case class Spin(count: Int) extends Reward
+    def wild(count: Int): Reward = WildMachinery(count)
   }
 
 
@@ -42,11 +74,21 @@ object actions {
     case class SpecialBuilding(row: Int, cost: LocationCost) extends BuildLocation
   }
 
-  sealed trait Action
+  sealed trait Action {
+    def rewards: Rewards
+    def take: StateM[GameState, Cost]
+    def cost(state: GameState): Result[Cost] = take.runA(state)
+  }
 
   object Action {
     sealed abstract class Workshop(val spin: Int) extends Action {
-      def reward: Reward.Spin = Reward.Spin(spin)
+      def rewards: Rewards = Rewards(Reward.Wrench(spin))
+
+      def take: StateM[GameState, Cost] =
+        for {
+          column <- lens.workshop composeWith WorkshopSection.forAction(this)
+        } yield cost(column)
+
       def cost(column: ActionColumn): Cost = this -> column match {
         case (Workshop.One, ActionColumn.Cheap) => Cost(1.eng)
         case (Workshop.One, ActionColumn.Expensive) => Cost(2.eng)
@@ -62,7 +104,13 @@ object actions {
       object Three extends Workshop(3)
     }
 
-    sealed abstract class MachineShop(val reward: Reward) extends Action {
+    sealed abstract class MachineShop(reward: Reward) extends Action {
+      def rewards: Rewards = Rewards(reward)
+      def take: StateM[GameState, Cost] =
+        for {
+          column <- lens.machineShop composeWith MachineShopSection.forAction(this)
+        } yield cost(column)
+
       def cost(column: ActionColumn): Cost = this -> column match {
         case (MachineShop.Excavator, ActionColumn.Cheap) => Cost(1.eng, 2.credit)
         case (MachineShop.Excavator, ActionColumn.Expensive) => Cost(1.eng, 5.credit)

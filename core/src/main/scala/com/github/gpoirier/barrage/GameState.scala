@@ -2,8 +2,9 @@ package com.github.gpoirier.barrage
 
 import cats.implicits._
 import cats.data.{NonEmptyList, StateT}
-import com.github.gpoirier.barrage.actions.Action
-import com.github.gpoirier.barrage.commands.Command
+
+import actions._
+import commands._
 import resources._
 import literals._
 
@@ -13,8 +14,8 @@ case class GameState(
   players: Map[Company, PlayerState],
   patentOffice: PatentOffice,
   externalWorks: ExternalWorks,
-  machineShop: MachineShop.Rows,
-  workshop: Workshop.Rows
+  machineShop: MachineShopSection.Rows,
+  workshop: WorkshopSection.Rows
 ) {
   def currentPlayerState: PlayerState = players(currentPlayer)
 
@@ -42,8 +43,8 @@ object GameState {
       // TODO Randomize first 3 tiles, and support for preselection with one tile per level removed
       patentOffice = PatentOffice(TechnologyTile.allForLevel(1).take(3)),
       externalWorks = ExternalWorks(Set()),
-      MachineShop.empty,
-      Workshop.empty
+      MachineShopSection.empty,
+      WorkshopSection.empty
     )
 
   def simple: GameState = initial(NonEmptyList.of(USA, Germany, Italy, France))
@@ -54,25 +55,19 @@ object GameState {
   private def forActivePlayerF(f: PlayerState => PlayerState): StateT[F, GameState, Unit] =
     StateT.modify[F, GameState](forActivePlayer(f))
 
-  private[barrage] def resolveCommand: Command => StateT[F, GameState, Unit] = {
-    case Command(action: Action.Workshop, Nil) =>
-      lens.workshop composeWith Workshop.forAction(action) flatMap { column =>
-        lens.currentPlayerState composeWith {
-          for {
-            _ <- PlayerState.payCost(action.cost(column))
-            _ <- PlayerState.spin(action.spin)
-          } yield ()
-        }
+  private[barrage] def resolveCommand(command: Command): StateT[F, GameState, Unit] = {
+    for {
+      cost <- command.action.take
+      _ <- lens.currentPlayerState composeWith PlayerState.payCost(cost)
+      _ <- command.action.rewards.value.traverse {
+        case reward: CompleteReward =>
+          StateT.modify[Result, GameState](reward.update)
+        case reward: IncompleteReward =>
+          // FIXME
+          val selector = command.rewardsHandlers.head
+          reward.update(selector)
       }
-//    case Command(action: Action.MachineShop, Nil) =>
-//      lens.machineShop composeWith MachineShop.forAction(action) flatMap { column =>
-//        lens.currentPlayerState composeWith {
-//          for {
-//            _ <- PlayerState.payCost(action.cost(column))
-//            _ <- PlayerState.resolveReward(action.reward)
-//          } yield ()
-//        }
-//      }
+    } yield ()
   }
 
 //  private def resolveAction: Action => GameState => GameState = {
@@ -167,7 +162,7 @@ object C1 extends ExternalWork {
   }
 }
 
-object MachineShop extends Section {
+object MachineShopSection extends Section {
   case class Rows(excavator: Row, wild: Row, both: Row)
 
   def forAction: Action.MachineShop => StateT[F, Rows, ActionColumn] = {
@@ -187,7 +182,7 @@ object MachineShop extends Section {
   )
 }
 
-object Workshop extends Section {
+object WorkshopSection extends Section {
   case class Rows(one: Row, two: Row, three: Row)
 
   def forAction: Action.Workshop => StateT[F, Rows, ActionColumn] = {

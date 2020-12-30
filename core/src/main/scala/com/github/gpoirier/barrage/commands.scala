@@ -1,5 +1,8 @@
 package com.github.gpoirier.barrage
 
+import cats.implicits._
+import cats.data._
+
 import resources._
 import actions._
 
