@@ -6,14 +6,18 @@ import org.scalatest.matchers.should.Matchers
 import scala.collection.immutable.Queue
 import cats.implicits._
 import cats.data._
-
 import actions._
 import commands._
 import resources._
 import literals._
+import org.scalatest.Assertion
 
 class GameStateSpec extends AnyFlatSpec with Matchers {
   behavior of "resolve"
+
+  implicit class StateOps[S](self: StateM[S, Assertion]) {
+    def runTest(initial: S): Assertion = self.runA(initial).fold(fail(_), identity)
+  }
 
   it should "support taking spin actions" in {
     val empty = WheelSlot.empty
@@ -40,13 +44,10 @@ class GameStateSpec extends AnyFlatSpec with Matchers {
       _ <- getWheel.map(_.slots shouldBe Queue(slot, empty, empty, empty, empty))
       _ <- getEng.map(_ shouldBe 7.eng)
 
-      result <- StateT.inspect[Result, GameState, String] { gs =>
-        GameState.resolveCommand(Command(Action.Workshop.Two, Nil)).run(gs)
-          .fold(identity, _ => fail("The third spin should fail"))
-      }
-    } yield result
+      result <- GameState.resolveCommand(Command(Action.Workshop.Two, Nil)).attempt
+    } yield result shouldBe Left("No empty action spot left (Two)")
 
-    op.run(before).fold(fail(_), _._2 shouldBe "No empty action spot left (Two)")
+    op.runTest(before)
   }
 
   it should "ensure spin costs are correct" in {
@@ -86,82 +87,67 @@ class GameStateSpec extends AnyFlatSpec with Matchers {
       _ <- getEng.map(_ shouldBe 0.eng)
       _ <- getCredits.map(_ shouldBe 0.credits)
 
-    } yield ()
+    } yield succeed
 
-    op.run(before)
+    op.runTest(before)
   }
 
-//  it should "support taking a single excavator" in {
-//    val initial: GameState = GameState.initial(NonEmptyList.of(USA))
-//    val getCredits: StateM[GameState, Credits] = StateT.inspect((lens.currentPlayerState composeLens lens.playerCredits).get)
-//    val getMachinery: StateM[GameState, Machinery] = StateT.inspect((lens.currentPlayerState composeLens lens.playerMachinery).get)
-//    val getEng: StateM[GameState, EngineerCount] = StateT.inspect((lens.currentPlayerState composeLens lens.engineers).get)
-//
-//    val op = for {
-//      // checking before state
-//      _ <- getCredits.map(_ shouldBe 6.credits)
-//      _ <- getMachinery.map(_ shouldBe Machinery(6.excavators, 4.mixers))
-//      _ <- getEng.map(_ shouldBe 12.eng)
-//
-//      // taking an excavator
-//      _ <- GameState.resolveCommand(Command(Action.MachineShop.Excavator, Nil))
-//      _ <- getCredits.map(_ shouldBe 4.credits)
-//      _ <- getMachinery.map(_ shouldBe Machinery(7.excavators, 4.mixers))
-//      _ <- getEng.map(_ shouldBe 11.eng)
-//
-//    } yield ()
-//
-//    op.run(initial)
-//  }
+  it should "support taking a single excavator" in {
+    val initial: GameState = GameState.initial(NonEmptyList.of(USA))
+    val getCredits: StateM[GameState, Credits] = StateT.inspect((lens.currentPlayerState composeLens lens.playerCredits).get)
+    val getMachinery: StateM[GameState, Machinery] = StateT.inspect((lens.currentPlayerState composeLens lens.playerMachinery).get)
+    val getEng: StateM[GameState, EngineerCount] = StateT.inspect((lens.currentPlayerState composeLens lens.engineers).get)
 
-//  it should "ensure MachineShop.WildForExcavator and MachineShop.WildForMixer work and occupy the same spot" in {
-//    val initial: GameState = GameState.initial(NonEmptyList.of(USA))
-//    val getCredits: StateM[GameState, Credits] = StateT.inspect((lens.currentPlayerState composeLens lens.playerCredits).get)
-//    val getMachinery: StateM[GameState, Machinery] = StateT.inspect((lens.currentPlayerState composeLens lens.playerMachinery).get)
-//    val getEng: StateM[GameState, EngineerCount] = StateT.inspect((lens.currentPlayerState composeLens lens.engineers).get)
-//    val addCredits = (lens.currentPlayerState composeLens lens.playerCredits).modify(_ ++ 10.credits)
-//    val before = addCredits(initial)
-//
-//    val op = for {
-//      // checking before state
-//      _ <- getCredits.map(_ shouldBe 16.credits)
-//      _ <- getMachinery.map(_ shouldBe Machinery(6.excavators, 4.mixers))
-//      _ <- getEng.map(_ shouldBe 12.eng)
-//
-//      // taking an excavator
-//      _ <- GameState.resolveCommand(Command(Action.MachineShop.Excavator, Nil))
-//      _ <- getCredits.map(_ shouldBe 14.credits)
-//      _ <- getMachinery.map(_ shouldBe Machinery(7.excavators, 4.mixers))
-//      _ <- getEng.map(_ shouldBe 11.eng)
-//
-//      // taking a second excavator
-//      _ <- GameState.resolveCommand(Command(Action.MachineShop.Excavator, Nil))
-//      _ <- getCredits.map(_ shouldBe 9.credits)
-//      _ <- getMachinery.map(_ shouldBe Machinery(8.excavators, 4.mixers))
-//      _ <- getEng.map(_ shouldBe 10.eng)
-//
-//      // trying to use the excavator spot again
-//      result <- StateT.inspect[Result, GameState, String] { gs =>
-//        GameState.resolveCommand(Command(Action.MachineShop.Excavator, Nil)).run(gs)
-//          .fold(identity, _ => fail("The third action should fail"))
-//      }
-//    } yield result
-//
-//    op.run(before).fold(fail(_), _._2 shouldBe "No empty action spot left (Wild)")
-//  }
-//
-//  it should "support taking a single mixer with the expensive choice spot" in {
-//    val initial = GameState.initial(NonEmptyList.of(USA, Italy, Germany, Netherlands))
-//    val after = GameState.resolve(initial, Action.MachineShop.choice(MachineryType.Mixer).expensive)
-//
-//    initial.currentPlayer shouldBe USA
-//    initial.nextPlayer shouldBe Italy
-//    initial.players(USA).resources shouldBe Resources(Credit(6), Machinery(excavators = 6, mixers = 4))
-//
-//    after.currentPlayer shouldBe Italy
-//    after.players(USA).resources shouldBe Resources(Credit(2), Machinery(excavators = 6, mixers = 5))
-//  }
-//
+    val op = for {
+      // checking before state
+      _ <- getCredits.map(_ shouldBe 6.credits)
+      _ <- getMachinery.map(_ shouldBe Machinery(6.excavators, 4.mixers))
+      _ <- getEng.map(_ shouldBe 12.eng)
+
+      // taking an excavator
+      _ <- GameState.resolveCommand(Command(Action.MachineShop.Excavator, Nil))
+      _ <- getCredits.map(_ shouldBe 4.credits)
+      _ <- getMachinery.map(_ shouldBe Machinery(7.excavators, 4.mixers))
+      _ <- getEng.map(_ shouldBe 11.eng)
+
+    } yield succeed
+
+    op.runTest(initial)
+  }
+
+  it should "ensure MachineShop.Wild work and occupy the same spot" in {
+    val initial: GameState = GameState.initial(NonEmptyList.of(USA))
+    val getCredits: StateM[GameState, Credits] = StateT.inspect((lens.currentPlayerState composeLens lens.playerCredits).get)
+    val getMachinery: StateM[GameState, Machinery] = StateT.inspect((lens.currentPlayerState composeLens lens.playerMachinery).get)
+    val getEng: StateM[GameState, EngineerCount] = StateT.inspect((lens.currentPlayerState composeLens lens.engineers).get)
+    val addCredits = (lens.currentPlayerState composeLens lens.playerCredits).modify(_ ++ 10.credits)
+    val before = addCredits(initial)
+
+    val op = for {
+      // checking before state
+      _ <- getCredits.map(_ shouldBe 16.credits)
+      _ <- getMachinery.map(_ shouldBe Machinery(6.excavators, 4.mixers))
+      _ <- getEng.map(_ shouldBe 12.eng)
+
+      // taking an excavator
+      _ <- GameState.resolveCommand(Command(Action.MachineShop.Wild, List(RewardSelector.WildMachinery(1.excavator))))
+      _ <- getCredits.map(_ shouldBe 12.credits)
+      _ <- getMachinery.map(_ shouldBe Machinery(7.excavators, 4.mixers))
+      _ <- getEng.map(_ shouldBe 11.eng)
+
+      // taking a second excavator
+      _ <- GameState.resolveCommand(Command(Action.MachineShop.Wild, List(RewardSelector.WildMachinery(1.mixer))))
+      _ <- getCredits.map(_ shouldBe 8.credits)
+      _ <- getMachinery.map(_ shouldBe Machinery(7.excavators, 5.mixers))
+      _ <- getEng.map(_ shouldBe 9.eng)
+
+      // trying to use the excavator spot again
+      result <- GameState.resolveCommand(Command(Action.MachineShop.Wild, Nil)).attempt
+    } yield result shouldBe Left("No empty action spot left (Wild)")
+
+    op.runTest(before)
+  }
+
 //  behavior of "ExternalWorks"
 //
 //  it should "ensure C1 takes 5 excavators for 6 points and 3 mixers" in {

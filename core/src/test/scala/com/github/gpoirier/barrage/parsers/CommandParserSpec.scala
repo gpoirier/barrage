@@ -5,6 +5,7 @@ import org.scalatest.Inside
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
+import cats.data._
 import actions._
 import commands._
 import resources.literals._
@@ -21,18 +22,18 @@ class CommandParserSpec extends AnyFlatSpec with Matchers with Inside {
     inside(parse("wild->1g")) {
       case Success(Command(action, selectors), _) =>
         action shouldBe Action.MachineShop.Wild
-        selectors shouldBe List(RewardSelector.WildMachinery(1.mixer))
+        selectors shouldBe Chain(RewardSelector.WildMachinery(1.mixer))
     }
     inside(parse("wild -> 1b")) {
       case Success(Command(action, selectors), _) =>
         action shouldBe Action.MachineShop.Wild
-        selectors shouldBe List(RewardSelector.WildMachinery(1.excavator))
+        selectors shouldBe Chain(RewardSelector.WildMachinery(1.excavator))
     }
   }
 
   it should "parse command without reward" in {
     inside(parse("both")) {
-      case Success(Command(action, Nil), _) =>
+      case Success(Command(action, Chain.nil), _) =>
         action shouldBe Action.MachineShop.Both
     }
   }

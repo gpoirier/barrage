@@ -8,49 +8,49 @@ import org.scalatest.Inside
 class MachineShopSpec extends AnyFlatSpec with Matchers with Inside {
   behavior of "reserve"
 
-  import MachineShop._
+  import MachineShopSection._
   import ActionColumn._
 
   it should "reserve free spots" in {
     val actions =
       for {
-        _ <- MachineShop.excavator
-        _ <- MachineShop.wild
-        _ <- MachineShop.excavator
+        _ <- MachineShopSection.excavator
+        _ <- MachineShopSection.wild
+        _ <- MachineShopSection.excavator
       } yield ()
 
-    inside(actions.run(MachineShop.empty)) {
+    inside(actions.run(MachineShopSection.empty)) {
       case Right((rows, ())) =>
-        rows.excavator shouldBe MachineShop.Row(List(Spot(Cheap, OccupiedSpot), Spot(Expensive, OccupiedSpot)))
-        rows.wild shouldBe MachineShop.Row(List(Spot(Cheap, OccupiedSpot), Spot(Expensive, FreeSpot)))
-        rows.both shouldBe MachineShop.Row(List(Spot(Cheap, FreeSpot), Spot(Expensive, FreeSpot)))
+        rows.excavator shouldBe MachineShopSection.Row(List(Spot(Cheap, OccupiedSpot), Spot(Expensive, OccupiedSpot)))
+        rows.wild shouldBe MachineShopSection.Row(List(Spot(Cheap, OccupiedSpot), Spot(Expensive, FreeSpot)))
+        rows.both shouldBe MachineShopSection.Row(List(Spot(Cheap, FreeSpot), Spot(Expensive, FreeSpot)))
     }
   }
 
   it should "deny too many reservations" in {
     val actions1 =
       for {
-        _ <- MachineShop.excavator
-        _ <- MachineShop.wild
-        _ <- MachineShop.excavator
-        _ <- MachineShop.excavator
+        _ <- MachineShopSection.excavator
+        _ <- MachineShopSection.wild
+        _ <- MachineShopSection.excavator
+        _ <- MachineShopSection.excavator
       } yield ()
 
     val actions2 =
       for {
-        _ <- MachineShop.excavator
-        _ <- MachineShop.wild
-        _ <- MachineShop.excavator
-        _ <- MachineShop.both
-        _ <- MachineShop.both
-        _ <- MachineShop.both
+        _ <- MachineShopSection.excavator
+        _ <- MachineShopSection.wild
+        _ <- MachineShopSection.excavator
+        _ <- MachineShopSection.both
+        _ <- MachineShopSection.both
+        _ <- MachineShopSection.both
       } yield ()
 
-    inside(actions1.run(MachineShop.empty)) {
+    inside(actions1.run(MachineShopSection.empty)) {
       case Left(message) =>
         message shouldBe "No empty action spot left (Excavator)"
     }
-    inside(actions2.run(MachineShop.empty)) {
+    inside(actions2.run(MachineShopSection.empty)) {
       case Left(message) =>
         message shouldBe "No empty action spot left (Both)"
     }

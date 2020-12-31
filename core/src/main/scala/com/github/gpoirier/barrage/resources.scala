@@ -74,6 +74,8 @@ object resources {
   case class Machinery(excavators: Excavators = 0.excavator, mixers: Mixers = 0.mixer) {
     def --(other: Machinery): Machinery = Machinery(excavators -- other.excavators, mixers -- other.mixers)
     def ++(other: Machinery): Machinery = Machinery(excavators ++ other.excavators, mixers ++ other.mixers)
+
+    def count: Int = excavators.coerce[Int] + mixers.coerce[Int]
   }
 
   object Machinery {
