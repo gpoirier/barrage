@@ -40,6 +40,8 @@ case class PlayerState(
   energyProduction: Energy,
   tiles: Set[TechnologyTile]
 ) {
+  def summary: String = s"${engineers.count} engineers, ${resources.summary}"
+
   def spin: PlayerState = {
     val (slot, newWheel) = wheel.push(WheelSlot.empty)
     copy(wheel = newWheel, resources = Resources(resources.credit, resources.machinery ++ slot.machinery), tiles = tiles ++ slot.tile)

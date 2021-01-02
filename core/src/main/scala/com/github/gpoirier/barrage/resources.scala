@@ -76,6 +76,8 @@ object resources {
     def ++(other: Machinery): Machinery = Machinery(excavators ++ other.excavators, mixers ++ other.mixers)
 
     def count: Int = excavators.coerce[Int] + mixers.coerce[Int]
+
+    def summary: String = s"${excavators.count} excavators, ${mixers.count} mixers"
   }
 
   object Machinery {
@@ -96,6 +98,8 @@ object resources {
   case class Resources(credit: Credits, machinery: Machinery) {
     def --(other: Resources): Resources = Resources(credit -- other.credit, machinery -- other.machinery)
     def ++(other: Resources): Resources = Resources(credit ++ other.credit, machinery ++ other.machinery)
+
+    def summary: String = s"${credit.count} credits, ${machinery.summary}"
   }
   object Resources {
     val empty: Resources = Resources(0.credit, Machinery.empty)
