@@ -1,23 +1,51 @@
 package com.github.gpoirier.barrage.cli
 
 import cats.implicits._
-import cats.data.StateT
+import cats.data._
 import cats.effect._
+import cats.mtl._
 import org.jline.reader._
 import org.jline.reader.LineReader.Option
 import org.jline.terminal.TerminalBuilder
-import cats.effect.IOApp
 import com.github.gpoirier.barrage.GameState
-import com.github.gpoirier.barrage.commands.Command
+import com.github.gpoirier.barrage.commands._
 import com.github.gpoirier.barrage.parsers.CommandParser
 
 object Main extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = {
-    App.make.flatMap(_.loop.run(GameState.simple)).as(ExitCode.Success)
+    type F[A] = StateT[IO, GameState, A]
+    val resolver = CommandResolver.default(Console.forSync[F])
+    App.make[F](resolver).loop.runA(GameState.simple).as(ExitCode.Success)
   }
 }
 
-case class App(reader: LineReader) {
+trait Console[F[_]] {
+  def print(text: String): F[Unit]
+}
+
+object Console {
+  implicit def forSync[F[_]: Sync]: Console[F] = text => Sync[F].delay(println(text))
+}
+
+trait CommandResolver[F[_]] {
+  def resolve(command: Command): F[Unit]
+}
+
+object CommandResolver {
+  type F[A] = StateT[IO, GameState, A]
+  def default(console: Console[F]): CommandResolver[F] = { cmd =>
+    for {
+      state <- StateT.get[IO, GameState]
+      _ <- GameState.resolve(cmd).transformF {
+        case Left(error) => console.print(error).run(state)
+        case Right((newState, ())) => IO(newState -> {})
+      }
+    } yield ()
+  }
+}
+
+case class App[F[_]](reader: LineReader, resolver: CommandResolver[F])
+                    (implicit F: Sync[F], S: Stateful[F, GameState], console: Console[F]) {
 
   object parse extends CommandParser {
     def apply(text: String): Either[String, Command] =
@@ -27,36 +55,29 @@ case class App(reader: LineReader) {
       }
   }
 
-  type F[A] = StateT[IO, GameState, A]
-  val F: Sync[F] = Sync[F]
+  def info(text: String): F[Unit] = console.print(s"[info] $text")
 
-  def info(text: String): IO[Unit] = IO(println(s"[info] $text"))
-  def execute: String => StateT[IO, GameState, Boolean] = {
-    case "exit" => StateT.pure(false)
+  def execute: String => F[Boolean] = {
+    case "exit" => F.pure(false)
     case line =>
       parse(line).fold(
-        failure => StateT.liftF[IO, GameState, Unit](info(s"Invalid command: $failure")).as(true),
-        cmd =>
-          for {
-            state <- StateT.get[IO, GameState]
-            _ <- StateT.setF[IO, GameState] {
-              GameState.resolve(cmd).run(state).fold(
-                error => info(s"Illegal State: $error").as(state),
-                pair => IO.pure(pair._1)
-              )
-            }
-          } yield true
+        failure => info(s"Invalid command: $failure").as(true),
+        cmd => resolver.resolve(cmd).as(true)
       )
   }
 
-  def toIO[A](result: Either[String, A]): IO[A] =
-    result.leftMap(new Exception(_)).liftTo[IO]
+  def readPrompt(prompt: String): F[String] =
+    F.delay(reader.readLine(prompt))
 
-  def readLine: IO[String] = IO(reader.readLine("barrage> "))
-
-  def loop: StateT[IO, GameState, Unit] =
+  def readLine: F[String] =
     for {
-      line <- StateT.liftF[IO, GameState, String](readLine)
+      state <- S.get
+      line <- readPrompt(s"${state.currentPlayerState.summary}\n${state.currentPlayer}> ")
+    } yield line
+
+  def loop: F[Unit] =
+    for {
+      line <- readLine
       continue <- execute(line)
       _ <- {
         if (continue) loop
@@ -66,7 +87,7 @@ case class App(reader: LineReader) {
 }
 
 object App {
-  def make: IO[App] = IO {
+  def make[F[_]: Sync: Stateful[*[_], GameState]](resolver: CommandResolver[F]): App[F] = {
     val terminal = TerminalBuilder.builder().build()
     // val executeThread = Thread.currentThread()
     // terminal.handle(Signal.INT,  _ => executeThread.interrupt())
@@ -84,6 +105,6 @@ object App {
       .option(Option.DISABLE_EVENT_EXPANSION, true)
       .build()
 
-    App(reader)
+    App(reader, resolver)
   }
 }

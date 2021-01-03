@@ -14,6 +14,7 @@ lazy val core = project
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % "2.0.0",
+      "org.typelevel" %% "cats-mtl" % "1.1.1",
       "io.estatico" %% "newtype" % "0.4.4",
       "org.typelevel" %% "simulacrum" % "1.0.0",
       "com.github.julien-truffaut" %% "monocle-core" % "2.1.0",
