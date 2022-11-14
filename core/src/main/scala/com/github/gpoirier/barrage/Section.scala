@@ -57,4 +57,50 @@ trait Section {
         }
     }
   }
+
+  import actions._
+  import cats._
+  import cats.implicits._
+
+  type Result[A] = Either[String, A]
+  def test: StateT[Either[String, *], GameState, actions.Cost] = ???
+  def test1: StateM[GameState, actions.Cost] = StateT[Result, GameState, Cost] { state =>
+    Right(state -> actions.Cost())
+  }
+
+  def test2[F[_]: Monad](implicit S: cats.mtl.Stateful[F, GameState]): F[Cost] = {
+    for {
+      state <- S.get
+      _ <- S.set(GameState.initial(???))
+    } yield Cost(state.currentPlayerState.engineers)
+  }
+
+  trait Console[F[_]] {
+    def print(text: String): F[Unit]
+  }
+
+  object Console {
+    implicit def forSync[F[_]: Sync]: Console[F] = new Console[F] {
+      def print(text: String): F[Unit] = Sync[F].delay(println(text))
+    }
+
+    import cats.Id
+    def unsafeForTest: Console[Id] = new Console[Id] {
+      def print(text: String): Id[Unit] = println(text)
+    }
+  }
+
+  trait Console0 {
+    def print(hello: String): IO[Unit]
+  }
+
+  test2[State[GameState, *]]
+  test2[StateM[GameState, *]]
+  test2[StateT[Either[String, *], GameState, *]]
+  test2[StateT[IO, GameState, *]]
+
+
+
+
+
 }

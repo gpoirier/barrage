@@ -221,3 +221,22 @@ object WorkshopSection extends Section {
     three = Row.emptyCommonRow,
   )
 }
+
+object Test {
+  case class Player()
+
+  type PlayerState[A] = StateT[Either[String, *], Player, A]
+
+  case class Game(name: String, player: Player)
+
+  type GameState[A] = StateT[Either[String, *], Game, A]
+
+  def convert[A]: PlayerState[A] => GameState[A] = { ps =>
+    StateT[Either[String, *], Game, A] { g =>
+      ps.run(g.player).map { case (p, a) =>
+        g.copy(player = p) -> a
+      }
+    }
+  }
+
+}
